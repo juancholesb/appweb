@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Control - CBflow tech</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-black text-zinc-100 font-sans p-6 md:p-12">
+
+    <!-- CABECERA -->
+    <header class="max-w-7xl mx-auto mb-12 flex justify-between items-center border-b border-zinc-800 pb-6">
+        <div>
+            <h1 class="text-3xl font-black text-white tracking-tight">CBFLOW <span class="text-cyan-400 text-2xl">CONTROL</span></h1>
+            <p class="text-xs text-zinc-500 mt-1">Administración Avanzada: Ahora con Modificación en Tiempo Real</p>
+        </div>
+        <a href="index.html" class="border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-400 text-xs font-semibold px-5 py-2.5 rounded-full transition-all">👁️ Ir a la Tienda</a>
+    </header>
+
+    <!-- FORMULARIOS DE REGISTRO / EDICIÓN -->
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+        
+        <!-- 1. CATEGORÍAS -->
+        <section class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl flex flex-col justify-between">
+            <div>
+                <h2 class="text-md font-bold text-cyan-400 mb-4 flex items-center gap-2">📂 Crear Categoría</h2>
+                <form id="form-categoria" class="space-y-4 text-sm">
+                    <input type="text" id="cat-nombre" placeholder="Ej: Pods Desechables XL" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-white focus:border-cyan-500 outline-none" required>
+                    <button type="submit" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl cursor-pointer hover:bg-cyan-400 transition">Agregar Categoría</button>
+                </form>
+            </div>
+            <div class="mt-6 border-t border-zinc-800 pt-4">
+                <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Pestañas Activas</h3>
+                <div id="lista-categorias-baja" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div>
+            </div>
+        </section>
+
+        <!-- 2. FORMULARIO: CARRUSEL (CON SOPORTE DE EDICIÓN) -->
+        <section class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl text-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="titulo-form-promo" class="text-md font-bold text-cyan-400">✨ Nueva Promo Carrusel</h2>
+                <button type="button" id="btn-cancelar-promo" class="hidden text-xs text-red-400 hover:underline cursor-pointer">Cancelar</button>
+            </div>
+            <form id="form-promo" class="space-y-3">
+                <input type="text" id="p-titulo" placeholder="Título Principal (Ej: SAMI POD 3)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                <input type="text" id="p-subtitulo" placeholder="Subtítulo (Ej: Lanzamiento Exclusivo)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                <input type="text" id="p-desc" placeholder="Descripción de la Promo" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="p-boton" value="Comprar Ahora" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none">
+                    <input type="url" id="p-imagen" placeholder="URL Imagen Banner" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                </div>
+                <input type="hidden" id="p-fondo" value="from-zinc-900 via-zinc-900 to-cyan-950/40">
+                <button type="submit" id="btn-submit-promo" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer">Publicar en Carrusel</button>
+            </form>
+        </section>
+
+        <!-- 3. FORMULARIO: PRODUCTOS (CON SOPORTE DE EDICIÓN) -->
+        <section class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl text-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="titulo-form-producto" class="text-md font-bold text-cyan-400">📦 Añadir Vape al Catálogo</h2>
+                <button type="button" id="btn-cancelar-producto" class="hidden text-xs text-red-400 hover:underline cursor-pointer">Cancelar</button>
+            </div>
+            <form id="form-producto" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="prod-nombre" placeholder="Nombre Vape" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                    <input type="number" id="prod-precio" placeholder="Precio ($)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
+                    <input type="url" id="prod-img" placeholder="URL de la imagen" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                </div>
+                <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                
+                <!-- SABORES -->
+                <div class="border-t border-zinc-800 pt-2">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[11px] font-bold text-zinc-400 uppercase">Sabores e Inventario</label>
+                        <button type="button" id="btn-agregar-sabor" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-2 py-1 rounded hover:bg-zinc-700 cursor-pointer">+ Sabor</button>
+                    </div>
+                    <div id="contenedor-sabores" class="space-y-1 max-h-24 overflow-y-auto pr-1"></div>
+                </div>
+
+                <button type="submit" id="btn-submit-producto" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer">Inyectar al Catálogo</button>
+            </form>
+        </section>
+    </main>
+
+    <!-- TABLAS DE CONTROL -->
+    <section class="max-w-7xl mx-auto space-y-8">
+        <h2 class="text-2xl font-black text-white border-b border-zinc-800 pb-2">📋 Inventario y Modificaciones en Vivo</h2>
+        
+        <!-- CARRUSEL -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-md font-bold text-zinc-300 mb-4">Banners Activos en el Carrusel</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-xs uppercase">
+                            <th class="py-2 px-4">Miniatura</th>
+                            <th class="py-2 px-4">Título</th>
+                            <th class="py-2 px-4">Subtítulo</th>
+                            <th class="py-2 px-4 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-promos"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PRODUCTOS -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+            <h3 class="text-md font-bold text-zinc-300 mb-4">Productos en Vitrina</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-xs uppercase">
+                            <th class="py-2 px-4">Imagen</th>
+                            <th class="py-2 px-4">Nombre</th>
+                            <th class="py-2 px-4">Categoría</th>
+                            <th class="py-2 px-4">Sabores y Stock</th>
+                            <th class="py-2 px-4">Precio</th>
+                            <th class="py-2 px-4 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const contenedorSabores = document.getElementById("contenedor-sabores");
+        
+        // Memoria temporal local para no sobrecargar de peticiones fetch
+        let cacheProductos = [];
+        let cachePromos = [];
+        
+        // IDs de control para saber si estamos editando
+        let editProductoId = null;
+        let editPromoId = null;
+
+        // Inyectar fila de sabor vacía
+        function agregarFilaSabor(nombre = "", stock = 10) {
+            const fila = document.createElement("div");
+            fila.className = "flex gap-2 items-center fila-sabor";
+            fila.innerHTML = `
+                <input type="text" value="${nombre}" placeholder="Sabor" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-xs input-sabor-nombre" required>
+                <input type="number" min="0" value="${stock}" placeholder="Stock" class="w-16 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-center outline-none text-xs input-sabor-stock" required>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 font-bold px-1 text-xs cursor-pointer">✕</button>
+            `;
+            contenedorSabores.appendChild(fila);
+        }
+
+        document.getElementById("btn-agregar-sabor").addEventListener("click", () => agregarFilaSabor());
+
+        // TRAER DATOS Y REDIBUJAR
+        async function actualizarTodo() {
+            // Categorías
+            const resCat = await fetch('/api/categorias');
+            const categorias = await resCat.json();
+            document.getElementById("prod-cat").innerHTML = categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            document.getElementById("lista-categorias-baja").innerHTML = categorias.map(c => `
+                <div class="flex justify-between items-center bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-xs">
+                    <span class="text-zinc-300">${c.nombre}</span>
+                    <button onclick="eliminarItem('categorias', '${c.id}')" class="text-red-400 font-bold px-1 cursor-pointer hover:text-red-300">✕</button>
+                </div>
+            `).join('');
+
+            // Banners Carrusel
+            const resPromo = await fetch('/api/promociones');
+            cachePromos = await resPromo.json();
+            document.getElementById("tabla-promos").innerHTML = cachePromos.map(p => `
+                <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
+                    <td class="py-3 px-4"><img src="${p.imagen}" class="w-12 h-8 object-cover rounded bg-zinc-950 border border-zinc-800"></td>
+                    <td class="py-3 px-4 font-bold text-white">${p.titulo}</td>
+                    <td class="py-3 px-4 text-zinc-400">${p.subtitulo}</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="activarEditarPromo(${p.id})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/30 border border-amber-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Editar ✏️</button>
+                        <button onclick="eliminarItem('promociones', ${p.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 border border-red-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            // Productos
+            const resProd = await fetch('/api/productos');
+            cacheProductos = await resProd.json();
+            document.getElementById("tabla-productos").innerHTML = cacheProductos.map(p => {
+                const listaSaboresHtml = p.sabores && p.sabores.length > 0 
+                    ? p.sabores.map(s => `<span class="inline-block bg-zinc-950 border ${s.stock === 0 ? 'border-red-900/40 text-red-400' : 'border-zinc-800 text-zinc-300'} px-2 py-0.5 rounded text-[11px] mr-1 mb-1">${s.nombre} (${s.stock}u)</span>`).join('')
+                    : '<span class="text-zinc-600 italic text-xs">Sin sabores</span>';
+
+                return `
+                <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
+                    <td class="py-3 px-4"><img src="${p.imagen}" class="w-10 h-10 object-contain rounded-lg bg-zinc-950 border border-zinc-800 p-1"></td>
+                    <td class="py-3 px-4 font-bold text-white">${p.nombre}</td>
+                    <td class="py-3 px-4"><span class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-400">${p.categoria}</span></td>
+                    <td class="py-3 px-4 max-w-xs">${listaSaboresHtml}</td>
+                    <td class="py-3 px-4 text-cyan-400 font-mono">$${p.precio.toLocaleString()}</td>
+                    <td class="py-3 px-4 text-right space-x-2">
+                        <button onclick="activarEditarProducto(${p.id})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/30 border border-amber-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Editar ✏️</button>
+                        <button onclick="eliminarItem('productos', ${p.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 border border-red-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Eliminar</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // ACCIONES DE CARGA PARA EDICIÓN
+        window.activarEditarPromo = function(id) {
+            const promo = cachePromos.find(p => p.id === id);
+            if(!promo) return;
+            editPromoId = id;
+            document.getElementById("titulo-form-promo").innerText = "✏️ Editando Banner Carrusel";
+            document.getElementById("btn-submit-promo").innerText = "Guardar Cambios 💾";
+            document.getElementById("btn-submit-promo").className = "w-full bg-amber-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
+            document.getElementById("btn-cancelar-promo").classList.remove("hidden");
+
+            // Rellenar campos
+            document.getElementById("p-titulo").value = promo.titulo;
+            document.getElementById("p-subtitulo").value = promo.subtitulo;
+            document.getElementById("p-desc").value = promo.descripcion;
+            document.getElementById("p-boton").value = promo.textoBoton;
+            document.getElementById("p-imagen").value = promo.imagen;
+            document.getElementById("p-fondo").value = promo.colorFondo;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.activarEditarProducto = function(id) {
+            const prod = cacheProductos.find(p => p.id === id);
+            if(!prod) return;
+            editProductoId = id;
+            document.getElementById("titulo-form-producto").innerText = "✏️ Editando Vapeador";
+            document.getElementById("btn-submit-producto").innerText = "Guardar Cambios 💾";
+            document.getElementById("btn-submit-producto").className = "w-full bg-amber-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
+            document.getElementById("btn-cancelar-producto").classList.remove("hidden");
+
+            // Rellenar campos
+            document.getElementById("prod-nombre").value = prod.nombre;
+            document.getElementById("prod-precio").value = prod.precio;
+            document.getElementById("prod-cat").value = prod.categoria;
+            document.getElementById("prod-img").value = prod.imagen;
+            document.getElementById("prod-desc").value = prod.descripcion;
+
+            // Re-armar caja de sabores
+            contenedorSabores.innerHTML = "";
+            if(prod.sabores) {
+                prod.sabores.forEach(s => agregarFilaSabor(s.nombre, s.stock));
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // CANCELADORES
+        document.getElementById("btn-cancelar-promo").addEventListener("click", () => {
+            editPromoId = null;
+            document.getElementById("form-promo").reset();
+            document.getElementById("titulo-form-promo").innerText = "✨ Nueva Promo Carrusel";
+            document.getElementById("btn-submit-promo").innerText = "Publicar en Carrusel";
+            document.getElementById("btn-submit-promo").className = "w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
+            document.getElementById("btn-cancelar-promo").classList.add("hidden");
+        });
+
+        document.getElementById("btn-cancelar-producto").addEventListener("click", () => {
+            editProductoId = null;
+            document.getElementById("form-producto").reset();
+            contenedorSabores.innerHTML = "";
+            document.getElementById("titulo-form-producto").innerText = "📦 Añadir Vape al Catálogo";
+            document.getElementById("btn-submit-producto").innerText = "Inyectar al Catálogo";
+            document.getElementById("btn-submit-producto").className = "w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
+            document.getElementById("btn-cancelar-producto").classList.add("hidden");
+        });
+
+        // ENVIAR FORMULARIO PROMO (POST o PUT)
+        document.getElementById("form-promo").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const data = {
+                titulo: document.getElementById("p-titulo").value,
+                subtitulo: document.getElementById("p-subtitulo").value,
+                descripcion: document.getElementById("p-desc").value,
+                textoBoton: document.getElementById("p-boton").value,
+                imagen: document.getElementById("p-imagen").value,
+                colorFondo: document.getElementById("p-fondo").value,
+                enlace: "#productos"
+            };
+
+            const url = editPromoId ? `/api/promociones/${editPromoId}` : '/api/promociones';
+            const method = editPromoId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if(res.ok) {
+                document.getElementById("btn-cancelar-promo").click();
+                await actualizarTodo();
+            }
+        });
+
+        // ENVIAR FORMULARIO PRODUCTOS (POST o PUT)
+        document.getElementById("form-producto").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const arraySabores = [];
+            document.querySelectorAll(".fila-sabor").forEach(f => {
+                const nombreSabor = f.querySelector(".input-sabor-nombre").value;
+                const stockSabor = Number(f.querySelector(".input-sabor-stock").value);
+                if(nombreSabor) arraySabores.push({ nombre: nombreSabor, stock: stockSabor });
+            });
+
+            const data = {
+                nombre: document.getElementById("prod-nombre").value,
+                categoria: document.getElementById("prod-cat").value,
+                precio: document.getElementById("prod-precio").value,
+                descripcion: document.getElementById("prod-desc").value,
+                imagen: document.getElementById("prod-img").value,
+                sabores: arraySabores
+            };
+
+            const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
+            const method = editProductoId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if(res.ok) {
+                document.getElementById("btn-cancelar-producto").click();
+                await actualizarTodo();
+            }
+        });
+
+        // ELIMINAR REGISTROS
+        window.eliminarItem = async function(endpoint, id) {
+            if(confirm(`¿Deseas eliminar este registro de ${endpoint}?`)) {
+                const res = await fetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+                if(res.ok) await actualizarTodo();
+            }
+        };
+
+        // ENVIAR CATEGORÍA
+        document.getElementById("form-categoria").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const res = await fetch('/api/categorias', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre: document.getElementById("cat-nombre").value })
+            });
+            if(res.ok) { document.getElementById("form-categoria").reset(); await actualizarTodo(); }
+        });
+
+        actualizarTodo();
+    </script>
+<script src="js-admin/admin-crud.js"></script>
+    <script src="js-admin/admin-app.js"></script>
+</body>
+</html>
