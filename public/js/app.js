@@ -321,11 +321,17 @@ function renderizarProductos(productos) {
             <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/5 group-hover:via-cyan-400/10 group-hover:to-cyan-500/5 rounded-2xl blur-xl transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
             
             <div class="relative z-10 p-4 flex flex-col justify-between h-full">
-                <!-- Imagen del producto -->
-                <div class="relative rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 p-4 flex justify-center items-center h-48">
+                <!-- Imagen del producto (MÁS GRANDE Y CON BORDES DIFUMINADOS) -->
+                <div class="relative rounded-xl overflow-hidden mb-5 bg-gradient-to-br from-zinc-800/30 to-zinc-900/30 p-2 flex justify-center items-center h-60">
+                    <!-- Overlay de bordes difuminados (Vignette) para que se mezcle con el fondo -->
+                    <div class="absolute inset-0 shadow-[inset_0_0_40px_rgba(24,24,27,1)] z-20 pointer-events-none rounded-xl mix-blend-multiply"></div>
+                    <div class="absolute inset-0 shadow-[inset_0_0_20px_rgba(24,24,27,0.8)] z-20 pointer-events-none rounded-xl"></div>
+                    
                     <!-- Resplandor detrás del producto -->
                     <div class="absolute inset-0 bg-gradient-to-t from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <img src="${p.imagen}" class="h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]" alt="${p.nombre}" loading="lazy">
+                    
+                    <!-- Imagen más grande con mask para difuminar bordes suaves -->
+                    <img src="${p.imagen}" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] -webkit-[mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)]" alt="${p.nombre}" loading="lazy">
                 </div>
 
                 <!-- Info -->
