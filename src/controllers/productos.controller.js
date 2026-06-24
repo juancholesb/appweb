@@ -20,17 +20,17 @@ exports.obtenerTodos = async (req, res) => {
 };
 
 exports.crearProducto = async (req, res) => {
-    const { nombre, descripcion, precio, categoria, imagen, sabores } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock } = req.body;
     try {
         const stringSabores = Array.isArray(sabores) ? sabores.join(', ') : String(sabores || '');
+        const stockInicial = Number(stock) || 0;
 
-        // Usamos la sintaxis con $1, $2... y agregamos RETURNING id al final
         const querySQL = `
-            INSERT INTO productos (nombre, descripcion, precio, categoria, imagen, sabores) 
-            VALUES ($1, $2, $3, $4, $5, $6) 
+            INSERT INTO productos (nombre, descripcion, precio, categoria, imagen, sabores, stock) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7) 
             RETURNING id
         `;
-        const valores = [nombre, descripcion, precio, categoria, imagen || 'img/logo.png', stringSabores];
+        const valores = [nombre, descripcion, precio, categoria, imagen || 'img/logo.png', stringSabores, stockInicial];
         
         const resultado = await db.query(querySQL, valores);
         res.status(201).json({ mensaje: 'Vape registrado en Postgres', id: resultado.rows[0].id });
@@ -41,16 +41,17 @@ exports.crearProducto = async (req, res) => {
 
 exports.editarProducto = async (req, res) => {
     const { id } = req.params;
-    const { nombre, descripcion, precio, categoria, imagen, sabores } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock } = req.body;
     try {
         const stringSabores = Array.isArray(sabores) ? sabores.join(', ') : String(sabores || '');
+        const stockVal = (stock !== undefined && stock !== null && stock !== '') ? Number(stock) : null;
 
-        const querySQL = `
-            UPDATE productos 
-            SET nombre = $1, descripcion = $2, precio = $3, categoria = $4, imagen = $5, sabores = $6 
-            WHERE id = $7
-        `;
-        const valores = [nombre, descripcion, precio, categoria, imagen, stringSabores, id];
+        const querySQL = stockVal !== null
+            ? `UPDATE productos SET nombre=$1, descripcion=$2, precio=$3, categoria=$4, imagen=$5, sabores=$6, stock=$7 WHERE id=$8`
+            : `UPDATE productos SET nombre=$1, descripcion=$2, precio=$3, categoria=$4, imagen=$5, sabores=$6 WHERE id=$7`;
+        const valores = stockVal !== null
+            ? [nombre, descripcion, precio, categoria, imagen, stringSabores, stockVal, id]
+            : [nombre, descripcion, precio, categoria, imagen, stringSabores, id];
 
         await db.query(querySQL, valores);
         res.json({ mensaje: 'Vape actualizado correctamente en Postgres.' });

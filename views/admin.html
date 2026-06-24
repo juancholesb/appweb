@@ -73,6 +73,7 @@
                     <input type="url" id="prod-img" placeholder="URL de la imagen" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                <input type="number" id="prod-stock" placeholder="Stock inicial (unidades)" min="0" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none">
                 
                 <!-- SABORES -->
                 <div class="border-t border-zinc-800 pt-2">
@@ -92,6 +93,31 @@
     <section class="max-w-7xl mx-auto space-y-8">
         <h2 class="text-2xl font-black text-white border-b border-zinc-800 pb-2">📋 Inventario y Modificaciones en Vivo</h2>
         
+        <!-- PEDIDOS -->
+        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-md font-bold text-zinc-300">📦 Pedidos Recibidos</h3>
+                <button onclick="actualizarTodo()" class="text-xs text-zinc-400 hover:text-cyan-400 border border-zinc-700 px-3 py-1 rounded-lg cursor-pointer transition">🔄 Actualizar</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-zinc-800 text-zinc-500 text-xs uppercase">
+                            <th class="py-2 px-4">#</th>
+                            <th class="py-2 px-4">Cliente</th>
+                            <th class="py-2 px-4">Dirección</th>
+                            <th class="py-2 px-4">Items</th>
+                            <th class="py-2 px-4">Total</th>
+                            <th class="py-2 px-4">Estado</th>
+                            <th class="py-2 px-4">Fecha</th>
+                            <th class="py-2 px-4 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-pedidos"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- CARRUSEL -->
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
             <h3 class="text-md font-bold text-zinc-300 mb-4">Banners Activos en el Carrusel</h3>
@@ -120,7 +146,8 @@
                             <th class="py-2 px-4">Imagen</th>
                             <th class="py-2 px-4">Nombre</th>
                             <th class="py-2 px-4">Categoría</th>
-                            <th class="py-2 px-4">Sabores y Stock</th>
+                            <th class="py-2 px-4">Sabores</th>
+                            <th class="py-2 px-4">Stock</th>
                             <th class="py-2 px-4">Precio</th>
                             <th class="py-2 px-4 text-right">Acciones</th>
                         </tr>
@@ -192,6 +219,8 @@
                 const listaSaboresHtml = saboresArr.length > 0 
                     ? saboresArr.map(s => `<span class="inline-block bg-zinc-950 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[11px] mr-1 mb-1">${s.trim()}</span>`).join('')
                     : '<span class="text-zinc-600 italic text-xs">Sin sabores</span>';
+                const stockNum = Number(p.stock) || 0;
+                const stockColor = stockNum === 0 ? 'text-red-400' : stockNum <= 5 ? 'text-amber-400' : 'text-green-400';
 
                 return `
                 <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
@@ -199,6 +228,7 @@
                     <td class="py-3 px-4 font-bold text-white">${p.nombre}</td>
                     <td class="py-3 px-4"><span class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-400">${p.categoria}</span></td>
                     <td class="py-3 px-4 max-w-xs">${listaSaboresHtml}</td>
+                    <td class="py-3 px-4 font-mono font-bold ${stockColor}">${stockNum}u</td>
                     <td class="py-3 px-4 text-cyan-400 font-mono">$${p.precio.toLocaleString()}</td>
                     <td class="py-3 px-4 text-right space-x-2">
                         <button onclick="activarEditarProducto(${p.id})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/30 border border-amber-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Editar ✏️</button>
@@ -207,6 +237,39 @@
                 </tr>
                 `;
             }).join('');
+
+            // Pedidos
+            try {
+                const resPed = await fetch('/api/pedidos');
+                if (resPed.ok) {
+                    const pedidos = await resPed.json();
+                    document.getElementById("tabla-pedidos").innerHTML = pedidos.length === 0
+                        ? `<tr><td colspan="8" class="text-center py-6 text-zinc-500 text-xs italic">No hay pedidos aún.</td></tr>`
+                        : pedidos.map(p => {
+                            const items = typeof p.items === 'string' ? JSON.parse(p.items) : p.items;
+                            const resumenItems = items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ');
+                            const fecha = new Date(p.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+                            const estadoColor = p.estado === 'confirmado' ? 'text-green-400 bg-green-950/30 border-green-900/40'
+                                : p.estado === 'cancelado' ? 'text-red-400 bg-red-950/30 border-red-900/40'
+                                : 'text-amber-400 bg-amber-950/30 border-amber-900/40';
+                            const acciones = p.estado === 'pendiente' ? `
+                                <button onclick="confirmarPedido(${p.id})" class="text-green-400 hover:text-green-300 text-xs bg-green-950/30 border border-green-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✅ Confirmar</button>
+                                <button onclick="cancelarPedido(${p.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 border border-red-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✕ Cancelar</button>
+                            ` : `<span class="text-zinc-600 text-xs italic">${p.estado}</span>`;
+                            return `
+                            <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
+                                <td class="py-3 px-4 text-zinc-500 font-mono text-xs">#${p.id}</td>
+                                <td class="py-3 px-4 font-bold text-white text-xs">${p.cliente_nombre}</td>
+                                <td class="py-3 px-4 text-zinc-400 text-xs">${p.cliente_direccion || '-'}</td>
+                                <td class="py-3 px-4 text-zinc-300 text-xs max-w-[200px] truncate" title="${resumenItems}">${resumenItems}</td>
+                                <td class="py-3 px-4 text-cyan-400 font-mono text-xs">$${Number(p.total).toLocaleString('es-CO')}</td>
+                                <td class="py-3 px-4"><span class="text-[10px] font-bold px-2 py-0.5 rounded border ${estadoColor}">${p.estado}</span></td>
+                                <td class="py-3 px-4 text-zinc-500 text-xs">${fecha}</td>
+                                <td class="py-3 px-4 text-right space-x-2">${acciones}</td>
+                            </tr>`;
+                        }).join('');
+                }
+            } catch(e) { console.warn('No se pudieron cargar pedidos', e); }
         }
 
         // ACCIONES DE CARGA PARA EDICIÓN
@@ -244,6 +307,7 @@
             document.getElementById("prod-cat").value = prod.categoria;
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
+            document.getElementById("prod-stock").value = prod.stock || 0;
 
             // Re-armar caja de sabores
             contenedorSabores.innerHTML = "";
@@ -252,6 +316,21 @@
                 saboresArr.forEach(s => agregarFilaSabor(s.trim(), 10));
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // CONFIRMAR / CANCELAR PEDIDOS
+        window.confirmarPedido = async function(id) {
+            if (!confirm('¿Confirmar este pedido y descontar el stock?')) return;
+            const res = await fetch(`/api/pedidos/${id}/confirmar`, { method: 'POST' });
+            const data = await res.json();
+            alert(res.ok ? '✅ ' + data.mensaje : '❌ ' + (data.error || 'Error'));
+            await actualizarTodo();
+        };
+
+        window.cancelarPedido = async function(id) {
+            if (!confirm('¿Cancelar este pedido?')) return;
+            const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'POST' });
+            await actualizarTodo();
         };
 
         // CANCELADORES
@@ -324,7 +403,8 @@
                 precio: document.getElementById("prod-precio").value,
                 descripcion: document.getElementById("prod-desc").value,
                 imagen: document.getElementById("prod-img").value,
-                sabores: arraySabores
+                sabores: arraySabores,
+                stock: document.getElementById("prod-stock").value || 0
             };
 
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';

@@ -229,6 +229,12 @@ function renderizarProductos(productos) {
                 <span class="inline-block bg-cyan-950/50 border border-cyan-800/40 text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2">
                     ${p.categoria || 'Desechables'}
                 </span>
+                ${(Number(p.stock) > 0)
+                    ? `<span class="inline-block bg-green-950/40 border border-green-800/30 text-[10px] font-bold text-green-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2 ml-1">${p.stock} disponibles</span>`
+                    : (p.stock === 0 || p.stock === '0')
+                    ? `<span class="inline-block bg-red-950/40 border border-red-800/30 text-[10px] font-bold text-red-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2 ml-1">Agotado</span>`
+                    : ''
+                }
 
                 <h3 class="text-white font-bold text-md tracking-tight group-hover:text-cyan-400 transition-colors mb-1">${p.nombre}</h3>
                 <p class="text-zinc-500 text-xs font-light line-clamp-2 mb-3">${p.descripcion || 'Sin descripción disponible.'}</p>
@@ -606,7 +612,7 @@ window.actualizarMetodosPago = function() {
     }
 };
 
-window.enviarPedidoWhatsApp = function() {
+window.enviarPedidoWhatsApp = async function() {
     if (carrito.length === 0) return alert("Tu carrito está vacío.");
     
     const nombre = document.getElementById("checkout-nombre").value.trim();
@@ -641,6 +647,30 @@ window.enviarPedidoWhatsApp = function() {
     
     if (ubicacion === "Nacional") {
         mensaje += `\n\n_(Nota: El costo de la empresa transportadora se coordina por aquí o se paga contraentrega al recibir)_`;
+    }
+
+    // Guardar pedido en la base de datos
+    try {
+        await fetch('/api/pedidos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                cliente_nombre: nombre,
+                cliente_direccion: direccion,
+                ubicacion,
+                metodo_pago: pago,
+                items: carrito.map(item => ({
+                    id: item.id,
+                    nombre: item.nombre,
+                    sabor: item.sabor,
+                    cantidad: item.cantidad,
+                    precio: item.precio
+                })),
+                total: totalTotal
+            })
+        });
+    } catch(e) {
+        console.warn('No se pudo registrar el pedido en la DB:', e);
     }
 
     const urlValidada = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;

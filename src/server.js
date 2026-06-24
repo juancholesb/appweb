@@ -8,6 +8,7 @@ const productosRoutes = require('./routes/productos.routes');
 const categoriasRoutes = require('./routes/categorias.routes');
 const promocionesRoutes = require('./routes/promociones.routes');
 const authRoutes = require('./routes/auth.routes');
+const pedidosRoutes = require('./routes/pedidos.routes');
 const { protegerVistaAdmin } = require('./middlewares/auth.middleware');
 
 const app = express();
@@ -69,6 +70,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/promociones', promocionesRoutes);
+app.use('/api/pedidos', pedidosRoutes);
 
 // Manejo seguro por si un cliente entra a un enlace roto
 app.use((req, res) => {
