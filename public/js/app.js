@@ -33,16 +33,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         const resPromo = await fetch('/api/promociones');
         if (resPromo.ok) {
             const promocionesLive = await resPromo.json();
-            if (typeof renderizarCarrusel === "function") renderizarCarrusel(promocionesLive);
+            renderizarCarrusel(promocionesLive.length > 0 ? promocionesLive : carruselPorDefecto);
         } else {
-            if (typeof renderizarCarrusel === "function") renderizarCarrusel(carruselPorDefecto);
+            renderizarCarrusel(carruselPorDefecto);
         }
     } catch (error) {
         console.warn("Servidor desconectado. Cargando carrusel de respaldo.");
-        if (typeof renderizarCarrusel === "function") renderizarCarrusel(carruselPorDefecto);
+        renderizarCarrusel(carruselPorDefecto);
     }
 
-    // 📦 2. Cargar Productos de la Vitrina
+    // 🏷️ 2. Cargar Categorías en el menú de filtro
+    try {
+        const resCat = await fetch('/api/categorias');
+        if (resCat.ok) {
+            const categorias = await resCat.json();
+            renderizarCategorias(categorias);
+        }
+    } catch (error) {
+        console.warn("No se pudieron cargar las categorías:", error);
+    }
+
+    // 📦 3. Cargar Productos de la Vitrina
     try {
         const resProd = await fetch('/api/productos');
         if (resProd.ok) {
@@ -63,6 +74,98 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Inicializar visualmente el carrito guardado
     actualizarInterfazCarrito();
 });
+
+// =========================================================================
+// 🎡 RENDERIZADOR DEL CARRUSEL DE PROMOCIONES
+// =========================================================================
+function renderizarCarrusel(promociones) {
+    const track = document.getElementById("carrusel-track");
+    const indicadores = document.getElementById("carrusel-indicadores");
+    if (!track) return;
+
+    track.innerHTML = promociones.map((p, i) => `
+        <div class="min-w-full snap-start relative flex items-center justify-center overflow-hidden"
+             style="min-height:300px; background: ${p.color_fondo || p.colorFondo || '#18181b'}">
+            ${p.imagen ? `<img src="${p.imagen}" class="absolute inset-0 w-full h-full object-cover opacity-30" alt="">` : ''}
+            <div class="relative z-10 text-center px-8 py-12 max-w-2xl">
+                ${p.subtitulo ? `<p class="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-3">${p.subtitulo}</p>` : ''}
+                <h2 class="text-white text-3xl md:text-5xl font-black mb-4 leading-tight">${p.titulo || ''}</h2>
+                ${p.descripcion ? `<p class="text-zinc-300 text-sm mb-6">${p.descripcion}</p>` : ''}
+                ${p.enlace ? `<a href="${p.enlace}" class="inline-block bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-6 py-3 rounded-xl transition">${p.texto_boton || p.textoBoton || 'Ver más'}</a>` : ''}
+            </div>
+        </div>
+    `).join('');
+
+    if (indicadores) {
+        indicadores.innerHTML = promociones.map((_, i) =>
+            `<button onclick="irASlide(${i})" class="w-2 h-2 rounded-full bg-zinc-600 transition carrusel-dot" data-index="${i}"></button>`
+        ).join('');
+    }
+
+    // Controles prev/next
+    let slideActual = 0;
+    const totalSlides = promociones.length;
+
+    window.irASlide = function(index) {
+        slideActual = (index + totalSlides) % totalSlides;
+        track.scrollTo({ left: track.clientWidth * slideActual, behavior: 'smooth' });
+        document.querySelectorAll('.carrusel-dot').forEach((dot, i) => {
+            dot.classList.toggle('bg-cyan-400', i === slideActual);
+            dot.classList.toggle('bg-zinc-600', i !== slideActual);
+        });
+    };
+
+    const btnPrev = document.getElementById("prev-slide");
+    const btnNext = document.getElementById("next-slide");
+    if (btnPrev) btnPrev.onclick = () => irASlide(slideActual - 1);
+    if (btnNext) btnNext.onclick = () => irASlide(slideActual + 1);
+
+    // Auto-slide cada 5 segundos si hay más de 1 slide
+    if (totalSlides > 1) {
+        setInterval(() => irASlide(slideActual + 1), 5000);
+    }
+
+    irASlide(0);
+}
+
+// =========================================================================
+// 🏷️ RENDERIZADOR DE CATEGORÍAS EN EL MENÚ DE FILTRO
+// =========================================================================
+function renderizarCategorias(categorias) {
+    const menu = document.getElementById("menu-categorias");
+    if (!menu) return;
+
+    const todas = `<button onclick="filtrarPorCategoria('todas')" 
+        class="cat-btn text-cyan-400 font-bold border-b-2 border-cyan-400 pb-1 cursor-pointer transition hover:text-cyan-300" 
+        data-cat="todas">Todas</button>`;
+
+    const botones = categorias.map(c => `
+        <button onclick="filtrarPorCategoria('${c.nombre}')" 
+            class="cat-btn text-zinc-400 hover:text-white cursor-pointer transition pb-1 border-b-2 border-transparent hover:border-zinc-500"
+            data-cat="${c.nombre}">${c.nombre}</button>
+    `).join('');
+
+    menu.innerHTML = todas + botones;
+}
+
+window.filtrarPorCategoria = function(categoria) {
+    // Actualizar estilos de botones activos
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+        const activo = btn.dataset.cat === categoria;
+        btn.classList.toggle('text-cyan-400', activo);
+        btn.classList.toggle('font-bold', activo);
+        btn.classList.toggle('border-cyan-400', activo);
+        btn.classList.toggle('text-zinc-400', !activo);
+        btn.classList.toggle('border-transparent', !activo);
+    });
+
+    if (categoria === 'todas') {
+        renderizarProductos(cacheProductosTienda);
+    } else {
+        const filtrados = cacheProductosTienda.filter(p => p.categoria === categoria);
+        renderizarProductos(filtrados);
+    }
+};
 
 // =========================================================================
 // 💾 DATOS DE RESPALDO (Por si el servidor está apagado)
@@ -543,86 +646,6 @@ window.enviarPedidoWhatsApp = function() {
     const urlValidada = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
     window.open(urlValidada, '_blank');
 };
-// =========================================================================
-// 🔄 8. RENDERIZAR LA INTERFAZ DEL CARRITO EN PANTALLA
-// =========================================================================
-function actualizarInterfazCarrito() {
-    try {
-        const totalItems = carrito.reduce((suma, item) => suma + Number(item.cantidad || 0), 0);
-        const precioTotal = carrito.reduce((suma, item) => suma + (Number(item.precio || 0) * Number(item.cantidad || 0)), 0);
-
-        const headerPrecio = document.getElementById("header-carrito-total");
-        const headerContador = document.getElementById("header-badge-carrito");
-        const sidebarPrecio = document.getElementById("carrito-total");
-        const contenedorItems = document.getElementById("carrito-items");
-
-        if (headerPrecio) headerPrecio.innerText = `$${precioTotal.toLocaleString()}`;
-        if (headerContador) headerContador.innerText = totalItems;
-        if (sidebarPrecio) sidebarPrecio.innerText = `$${precioTotal.toLocaleString()}`;
-
-        if (!contenedorItems) return;
-
-        if (carrito.length === 0) {
-            contenedorItems.innerHTML = `<p class="text-zinc-500 text-sm text-center mt-10 italic">Tu carrito está vacío.</p>`;
-            return;
-        }
-
-        const listaGlobal = obtenerListaProductosGlobal();
-
-        contenedorItems.innerHTML = carrito.map(item => {
-            const productoOriginal = listaGlobal.find(p => String(p.id) === String(item.id));
-            
-            let listaSabores = [item.sabor || "Original"];
-            if (productoOriginal && productoOriginal.sabores) {
-                listaSabores = Array.isArray(productoOriginal.sabores) 
-                    ? productoOriginal.sabores 
-                    : productoOriginal.sabores.split(",");
-            }
-
-            const precioUnitario = Number(item.precio || 0);
-            const cantidadItem = Number(item.cantidad || 1);
-            const subtotalItem = precioUnitario * cantidadItem;
-            const saborSeguro = (item.sabor || "Original").trim();
-            const saborEscapado = saborSeguro.replace(/'/g, "\\'");
-
-            return `
-            <div class="flex items-center gap-3 bg-zinc-900 p-3 rounded-xl border border-zinc-800/60 transition-all">
-                <div class="w-12 h-12 bg-zinc-950 rounded-lg flex items-center justify-center p-1 flex-shrink-0 border border-zinc-800">
-                    <img src="${item.imagen || ''}" class="h-full object-contain" alt="${item.nombre || 'Vaper'}">
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h4 class="text-white text-xs font-bold truncate">${item.nombre || 'Producto'}</h4>
-                    <div class="mt-1">
-                        <select onchange="cambiarSaborEnCarrito(${item.id}, '${saborEscapado}', this.value)" 
-                                class="bg-zinc-950 border border-zinc-800 text-[10px] text-cyan-400 font-black uppercase tracking-wider py-0.5 px-1.5 rounded-md outline-none focus:border-cyan-500 cursor-pointer max-w-full truncate">
-                            ${listaSabores.map(sabor => {
-                                const sabClean = sabor.trim();
-                                return `<option value="${sabClean}" ${sabClean === saborSeguro ? 'selected' : ''}>💨 ${sabClean}</option>`;
-                            }).join('')}
-                        </select>
-                    </div>
-                    <p class="text-zinc-500 text-[10px] font-mono mt-1">$${precioUnitario.toLocaleString()} c/u</p>
-                </div>
-                <div class="flex items-center gap-2 bg-zinc-950 px-2 py-1 rounded-lg border border-zinc-800 shadow-inner flex-shrink-0">
-                    <button onclick="cambiarCantidad(${item.id}, '${saborEscapado}', -1)" class="text-zinc-400 hover:text-red-400 font-bold text-xs cursor-pointer px-1 active:scale-90 transition">-</button>
-                    <span class="text-white font-mono text-xs font-bold px-0.5">${cantidadItem}</span>
-                    <button onclick="cambiarCantidad(${item.id}, '${saborEscapado}', 1)" class="text-zinc-400 hover:text-cyan-400 font-bold text-xs cursor-pointer px-1 active:scale-90 transition">+</button>
-                </div>
-                <div class="text-right min-w-[65px] flex-shrink-0">
-                    <span class="text-cyan-400 font-mono text-xs font-bold block">$${subtotalItem.toLocaleString()}</span>
-                </div>
-                <button onclick="eliminarDelCarrito(${item.id}, '${saborEscapado}')" 
-                        class="text-zinc-500 hover:text-red-500 font-black text-sm p-1 cursor-pointer active:scale-75 transition-all flex-shrink-0">
-                    ✕
-                </button>
-            </div>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error("Error crítico al renderizar la interfaz del carrito:", error);
-    }
-}
 // =========================================================================
 // 🔄 9. CONTROLADOR DE CANTIDADES (NORMALIZACIÓN ABSOLUTA)
 // =========================================================================
