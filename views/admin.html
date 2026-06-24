@@ -161,7 +161,7 @@
             // Categorías
             const resCat = await fetch('/api/categorias');
             const categorias = await resCat.json();
-            document.getElementById("prod-cat").innerHTML = categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            document.getElementById("prod-cat").innerHTML = categorias.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
             document.getElementById("lista-categorias-baja").innerHTML = categorias.map(c => `
                 <div class="flex justify-between items-center bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-xs">
                     <span class="text-zinc-300">${c.nombre}</span>
@@ -188,8 +188,9 @@
             const resProd = await fetch('/api/productos');
             cacheProductos = await resProd.json();
             document.getElementById("tabla-productos").innerHTML = cacheProductos.map(p => {
-                const listaSaboresHtml = p.sabores && p.sabores.length > 0 
-                    ? p.sabores.map(s => `<span class="inline-block bg-zinc-950 border ${s.stock === 0 ? 'border-red-900/40 text-red-400' : 'border-zinc-800 text-zinc-300'} px-2 py-0.5 rounded text-[11px] mr-1 mb-1">${s.nombre} (${s.stock}u)</span>`).join('')
+                const saboresArr = Array.isArray(p.sabores) ? p.sabores : (p.sabores ? String(p.sabores).split(',') : []);
+                const listaSaboresHtml = saboresArr.length > 0 
+                    ? saboresArr.map(s => `<span class="inline-block bg-zinc-950 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[11px] mr-1 mb-1">${s.trim()}</span>`).join('')
                     : '<span class="text-zinc-600 italic text-xs">Sin sabores</span>';
 
                 return `
@@ -222,7 +223,7 @@
             document.getElementById("p-titulo").value = promo.titulo;
             document.getElementById("p-subtitulo").value = promo.subtitulo;
             document.getElementById("p-desc").value = promo.descripcion;
-            document.getElementById("p-boton").value = promo.textoBoton;
+            document.getElementById("p-boton").value = promo.texto_boton || promo.textoBoton || 'Comprar Ahora';
             document.getElementById("p-imagen").value = promo.imagen;
             document.getElementById("p-fondo").value = promo.colorFondo;
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -247,7 +248,8 @@
             // Re-armar caja de sabores
             contenedorSabores.innerHTML = "";
             if(prod.sabores) {
-                prod.sabores.forEach(s => agregarFilaSabor(s.nombre, s.stock));
+                const saboresArr = Array.isArray(prod.sabores) ? prod.sabores : String(prod.sabores).split(',');
+                saboresArr.forEach(s => agregarFilaSabor(s.trim(), 10));
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -288,15 +290,22 @@
             const url = editPromoId ? `/api/promociones/${editPromoId}` : '/api/promociones';
             const method = editPromoId ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if(res.ok) {
-                document.getElementById("btn-cancelar-promo").click();
-                await actualizarTodo();
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if(res.ok) {
+                    document.getElementById("btn-cancelar-promo").click();
+                    await actualizarTodo();
+                    alert(editPromoId ? "✅ Banner actualizado." : "✅ Banner publicado en el carrusel.");
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert("❌ Error: " + (err.detalle || err.error || 'Error desconocido'));
+                }
+            } catch(err) {
+                alert("❌ Error de red: " + err.message);
             }
         });
 
@@ -305,9 +314,8 @@
             e.preventDefault();
             const arraySabores = [];
             document.querySelectorAll(".fila-sabor").forEach(f => {
-                const nombreSabor = f.querySelector(".input-sabor-nombre").value;
-                const stockSabor = Number(f.querySelector(".input-sabor-stock").value);
-                if(nombreSabor) arraySabores.push({ nombre: nombreSabor, stock: stockSabor });
+                const nombreSabor = f.querySelector(".input-sabor-nombre").value.trim();
+                if(nombreSabor) arraySabores.push(nombreSabor);
             });
 
             const data = {
@@ -322,15 +330,22 @@
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
             const method = editProductoId ? 'PUT' : 'POST';
 
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if(res.ok) {
-                document.getElementById("btn-cancelar-producto").click();
-                await actualizarTodo();
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if(res.ok) {
+                    document.getElementById("btn-cancelar-producto").click();
+                    await actualizarTodo();
+                    alert(editProductoId ? "✅ Producto actualizado." : "✅ Producto agregado al catálogo.");
+                } else {
+                    const err = await res.json().catch(() => ({}));
+                    alert("❌ Error al guardar: " + (err.detalle || err.error || 'Revisa la consola del navegador'));
+                }
+            } catch(err) {
+                alert("❌ Error de red: " + err.message);
             }
         });
 
