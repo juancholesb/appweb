@@ -14,7 +14,10 @@
             <h1 class="text-3xl font-black text-white tracking-tight">CBFLOW <span class="text-cyan-400 text-2xl">CONTROL</span></h1>
             <p class="text-xs text-zinc-500 mt-1">Administración Avanzada: Ahora con Modificación en Tiempo Real</p>
         </div>
-        <a href="index.html" class="border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-400 text-xs font-semibold px-5 py-2.5 rounded-full transition-all">👁️ Ir a la Tienda</a>
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-400 text-xs font-semibold px-5 py-2.5 rounded-full transition-all">👁️ Ir a la Tienda</a>
+            <button id="btn-cerrar-sesion" class="border border-red-900/50 hover:border-red-500 text-red-400 hover:text-red-300 text-xs font-semibold px-5 py-2.5 rounded-full transition-all cursor-pointer">🔒 Cerrar Sesión</button>
+        </div>
     </header>
 
     <!-- FORMULARIOS DE REGISTRO / EDICIÓN -->
@@ -349,6 +352,23 @@
             });
             if(res.ok) { document.getElementById("form-categoria").reset(); await actualizarTodo(); }
         });
+
+        document.getElementById("btn-cerrar-sesion").addEventListener("click", async () => {
+            if (!confirm("¿Cerrar sesión del panel de administración?")) return;
+            await fetch('/api/auth/logout', { method: 'POST' });
+            window.location.href = '/admin-login.html';
+        });
+
+        // Si cualquier petición a la API responde 401, significa que la
+        // sesión expiró o no es válida: mandamos de vuelta al login.
+        const fetchOriginal = window.fetch;
+        window.fetch = async function (...args) {
+            const respuesta = await fetchOriginal(...args);
+            if (respuesta.status === 401) {
+                window.location.href = '/admin-login.html';
+            }
+            return respuesta;
+        };
 
         actualizarTodo();
     </script>
