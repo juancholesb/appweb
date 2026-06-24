@@ -320,9 +320,9 @@ function renderizarProductos(productos) {
             <!-- Resplandor hover -->
             <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/5 group-hover:via-cyan-400/10 group-hover:to-cyan-500/5 rounded-2xl blur-xl transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
             
-            <div class="relative z-10 p-4 flex flex-col justify-between h-full">
+            <div class="relative z-10 p-3 sm:p-4 flex flex-col justify-between h-full">
                 <!-- Imagen del producto (MÁS GRANDE Y CON BORDES DIFUMINADOS) -->
-                <div class="relative rounded-xl overflow-hidden mb-5 bg-gradient-to-br from-zinc-800/30 to-zinc-900/30 p-2 flex justify-center items-center h-60">
+                <div class="relative rounded-xl overflow-hidden mb-3 sm:mb-5 bg-gradient-to-br from-zinc-800/30 to-zinc-900/30 p-2 flex justify-center items-center h-40 sm:h-60">
                     <!-- Overlay de bordes difuminados (Vignette) para que se mezcle con el fondo -->
                     <div class="absolute inset-0 shadow-[inset_0_0_40px_rgba(24,24,27,1)] z-20 pointer-events-none rounded-xl mix-blend-multiply"></div>
                     <div class="absolute inset-0 shadow-[inset_0_0_20px_rgba(24,24,27,0.8)] z-20 pointer-events-none rounded-xl"></div>
@@ -335,25 +335,25 @@ function renderizarProductos(productos) {
                 </div>
 
                 <!-- Info -->
-                <div class="flex flex-wrap gap-1.5 mb-2.5">
-                    <span class="inline-flex items-center bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <div class="flex flex-wrap gap-1 sm:gap-1.5 mb-2">
+                    <span class="inline-flex items-center bg-cyan-500/10 border border-cyan-500/20 text-[9px] sm:text-[10px] font-bold text-cyan-400 px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider">
                         ${p.categoria || 'Desechables'}
                     </span>
                     ${stockBadge}
                 </div>
 
-                <h3 class="text-white font-bold text-[15px] tracking-tight group-hover:text-cyan-400 transition-colors duration-300 mb-1 line-clamp-2">${p.nombre}</h3>
-                <p class="text-zinc-500 text-[11px] font-light line-clamp-2 mb-3 leading-relaxed">${p.descripcion || 'Sin descripción disponible.'}</p>
+                <h3 class="text-white font-bold text-[13px] sm:text-[15px] tracking-tight group-hover:text-cyan-400 transition-colors duration-300 mb-1 line-clamp-2">${p.nombre}</h3>
+                <p class="text-zinc-500 text-[10px] sm:text-[11px] font-light line-clamp-2 mb-2 sm:mb-3 leading-relaxed">${p.descripcion || 'Sin descripción disponible.'}</p>
                 
                 ${saboresHtml}
 
                 <!-- Precio y botón -->
-                <div class="flex justify-between items-center border-t border-zinc-800/50 pt-3 mt-auto" onclick="event.stopPropagation()">
-                    <span class="text-cyan-400 font-mono font-black text-lg tracking-tight">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-t border-zinc-800/50 pt-2.5 sm:pt-3 mt-auto" onclick="event.stopPropagation()">
+                    <span class="text-cyan-400 font-mono font-black text-base sm:text-lg tracking-tight">
                         $${Number(p.precio).toLocaleString('es-CO')}
                     </span>
                     <button onclick="agregarAlCarritoDesdeVitrina(${p.id})" 
-                            class="bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[11px] px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] active:scale-95 ${agotado ? 'opacity-50 pointer-events-none' : ''}">
+                            class="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[10px] sm:text-[11px] px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] active:scale-95 ${agotado ? 'opacity-50 pointer-events-none' : ''}">
                         🛒 Agregar
                     </button>
                 </div>
