@@ -1,8 +1,20 @@
 // =========================================================================
 // 🛠️ OPERACIONES CRUD DEL PANEL SECRETO (admin-crud.js)
+// (Legacy - Ahora la mayor parte de la lógica está en admin.html)
 // =========================================================================
 
+// Nota: La funcionalidad principal del CRUD se ha movido directamente a admin.html
+// para manejar mejor el nuevo sistema de stock individual por sabor.
+// Este archivo se mantiene por retrocompatibilidad si alguna vista antigua lo requiere.
+
 window.cargarProductosAdmin = async function() {
+    if (typeof actualizarTodo === 'function') {
+        // Si estamos en el nuevo admin.html, delegamos a su función nativa
+        actualizarTodo();
+        return;
+    }
+    
+    // Fallback para vistas antiguas
     const tabla = document.getElementById("tabla-productos-body");
     if (!tabla) return;
 
@@ -16,7 +28,14 @@ window.cargarProductosAdmin = async function() {
         }
 
         tabla.innerHTML = productos.map(p => {
-            const txtSabores = Array.isArray(p.sabores) ? p.sabores.join(', ') : String(p.sabores || '');
+            // Manejar tanto el nuevo formato [{nombre, stock}] como el viejo string "sabor1, sabor2"
+            let txtSabores = '';
+            if (Array.isArray(p.sabores)) {
+                txtSabores = p.sabores.map(s => typeof s === 'object' ? `${s.nombre} (${s.stock})` : s).join(', ');
+            } else {
+                txtSabores = String(p.sabores || '');
+            }
+            
             return `
             <tr class="border-b border-zinc-800/60 hover:bg-zinc-900/30 transition text-sm">
                 <td class="p-3 text-zinc-500 font-mono text-xs">${p.id}</td>
@@ -49,7 +68,17 @@ window.procesarFormularioAdmin = async function(e) {
     const nombre = document.getElementById("form-nombre").value.trim();
     const precio = Number(document.getElementById("form-precio").value);
     const categoria = document.getElementById("form-categoria").value;
-    const sabores = document.getElementById("form-sabores").value.trim();
+    
+    // Fallback simple: Si usa el form viejo con un solo input de sabores
+    const inputSabores = document.getElementById("form-sabores");
+    let sabores = [];
+    if (inputSabores) {
+        sabores = inputSabores.value.split(',').map(s => ({
+            nombre: s.trim(),
+            stock: 0 // Si usa el form viejo, se inicia en 0 y debe editarlo en el nuevo form
+        })).filter(s => s.nombre);
+    }
+    
     const descripcion = document.getElementById("form-descripcion").value.trim();
     const imagen = document.getElementById("form-imagen").value.trim() || "img/logo.png";
 
@@ -86,7 +115,16 @@ window.prepararFormularioEdicion = function(p) {
     document.getElementById("form-nombre").value = p.nombre;
     document.getElementById("form-precio").value = p.precio;
     document.getElementById("form-categoria").value = p.categoria || "Desechables";
-    document.getElementById("form-sabores").value = Array.isArray(p.sabores) ? p.sabores.join(', ') : p.sabores;
+    
+    const inputSabores = document.getElementById("form-sabores");
+    if (inputSabores) {
+        if (Array.isArray(p.sabores)) {
+            inputSabores.value = p.sabores.map(s => typeof s === 'object' ? s.nombre : s).join(', ');
+        } else {
+            inputSabores.value = p.sabores || "";
+        }
+    }
+    
     document.getElementById("form-descripcion").value = p.descripcion || "";
     document.getElementById("form-imagen").value = p.imagen || "";
     
@@ -110,7 +148,8 @@ window.eliminarVapeAdmin = async function(id) {
 function resetearFormularioAdmin() {
     const form = document.getElementById("form-crud-admin");
     if(form) form.reset();
-    document.getElementById("form-id").value = "";
+    const formId = document.getElementById("form-id");
+    if (formId) formId.value = "";
     const btn = document.getElementById("btn-submit-admin");
     if(btn) btn.innerText = "Crear Vape 🔥";
 }

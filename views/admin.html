@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control - CBflow tech</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>* { font-family: 'Inter', system-ui, sans-serif; }</style>
 </head>
 <body class="bg-black text-zinc-100 font-sans p-6 md:p-12">
 
@@ -12,7 +16,7 @@
     <header class="max-w-7xl mx-auto mb-12 flex justify-between items-center border-b border-zinc-800 pb-6">
         <div>
             <h1 class="text-3xl font-black text-white tracking-tight">CBFLOW <span class="text-cyan-400 text-2xl">CONTROL</span></h1>
-            <p class="text-xs text-zinc-500 mt-1">Administración Avanzada: Ahora con Modificación en Tiempo Real</p>
+            <p class="text-xs text-zinc-500 mt-1">Administración Avanzada: Ahora con Stock por Sabor</p>
         </div>
         <div class="flex items-center gap-3">
             <a href="index.html" class="border border-zinc-700 hover:border-cyan-400 text-zinc-400 hover:text-cyan-400 text-xs font-semibold px-5 py-2.5 rounded-full transition-all">👁️ Ir a la Tienda</a>
@@ -57,7 +61,7 @@
             </form>
         </section>
 
-        <!-- 3. FORMULARIO: PRODUCTOS (CON SOPORTE DE EDICIÓN) -->
+        <!-- 3. FORMULARIO: PRODUCTOS (CON SABORES + STOCK INDIVIDUAL) -->
         <section class="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl shadow-xl text-sm">
             <div class="flex justify-between items-center mb-4">
                 <h2 id="titulo-form-producto" class="text-md font-bold text-cyan-400">📦 Añadir Vape al Catálogo</h2>
@@ -73,15 +77,15 @@
                     <input type="url" id="prod-img" placeholder="URL de la imagen" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
-                <input type="number" id="prod-stock" placeholder="Stock inicial (unidades)" min="0" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none">
                 
-                <!-- SABORES -->
-                <div class="border-t border-zinc-800 pt-2">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-[11px] font-bold text-zinc-400 uppercase">Sabores e Inventario</label>
-                        <button type="button" id="btn-agregar-sabor" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-2 py-1 rounded hover:bg-zinc-700 cursor-pointer">+ Sabor</button>
+                <!-- SABORES CON STOCK INDIVIDUAL -->
+                <div class="border-t border-zinc-800 pt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">💨 Sabores e Inventario Individual</label>
+                        <button type="button" id="btn-agregar-sabor" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">+ Agregar Sabor</button>
                     </div>
-                    <div id="contenedor-sabores" class="space-y-1 max-h-24 overflow-y-auto pr-1"></div>
+                    <p class="text-[10px] text-zinc-600 mb-2 italic">Cada sabor tiene su propio stock independiente</p>
+                    <div id="contenedor-sabores" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
                 </div>
 
                 <button type="submit" id="btn-submit-producto" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer">Inyectar al Catálogo</button>
@@ -146,8 +150,8 @@
                             <th class="py-2 px-4">Imagen</th>
                             <th class="py-2 px-4">Nombre</th>
                             <th class="py-2 px-4">Categoría</th>
-                            <th class="py-2 px-4">Sabores</th>
-                            <th class="py-2 px-4">Stock</th>
+                            <th class="py-2 px-4">Sabores (Stock)</th>
+                            <th class="py-2 px-4">Stock Total</th>
                             <th class="py-2 px-4">Precio</th>
                             <th class="py-2 px-4 text-right">Acciones</th>
                         </tr>
@@ -161,7 +165,7 @@
     <script>
         const contenedorSabores = document.getElementById("contenedor-sabores");
         
-        // Memoria temporal local para no sobrecargar de peticiones fetch
+        // Memoria temporal local
         let cacheProductos = [];
         let cachePromos = [];
         
@@ -169,14 +173,18 @@
         let editProductoId = null;
         let editPromoId = null;
 
-        // Inyectar fila de sabor vacía
-        function agregarFilaSabor(nombre = "", stock = 10) {
+        // Inyectar fila de sabor con stock individual
+        function agregarFilaSabor(nombre = "", stock = 0) {
             const fila = document.createElement("div");
-            fila.className = "flex gap-2 items-center fila-sabor";
+            fila.className = "flex gap-2 items-center fila-sabor bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/50";
             fila.innerHTML = `
-                <input type="text" value="${nombre}" placeholder="Sabor" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-xs input-sabor-nombre" required>
-                <input type="number" min="0" value="${stock}" placeholder="Stock" class="w-16 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-center outline-none text-xs input-sabor-stock" required>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 font-bold px-1 text-xs cursor-pointer">✕</button>
+                <span class="text-zinc-500 text-xs">💨</span>
+                <input type="text" value="${nombre}" placeholder="Nombre del sabor" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-xs focus:border-cyan-500 input-sabor-nombre" required>
+                <div class="flex items-center gap-1">
+                    <input type="number" min="0" value="${stock}" placeholder="0" class="w-16 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-center outline-none text-xs focus:border-cyan-500 input-sabor-stock" required>
+                    <span class="text-zinc-600 text-[10px]">uds</span>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition">✕</button>
             `;
             contenedorSabores.appendChild(fila);
         }
@@ -211,16 +219,30 @@
                 </tr>
             `).join('');
 
-            // Productos
+            // Productos - Ahora con sabores que son objetos {nombre, stock}
             const resProd = await fetch('/api/productos');
             cacheProductos = await resProd.json();
             document.getElementById("tabla-productos").innerHTML = cacheProductos.map(p => {
-                const saboresArr = Array.isArray(p.sabores) ? p.sabores : (p.sabores ? String(p.sabores).split(',') : []);
+                // Los sabores ahora pueden ser objetos {nombre, stock} o strings legacy
+                let saboresArr = [];
+                if (Array.isArray(p.sabores)) {
+                    saboresArr = p.sabores.map(s => typeof s === 'object' ? s : { nombre: String(s).trim(), stock: -1 });
+                } else if (p.sabores && typeof p.sabores === 'string') {
+                    saboresArr = p.sabores.split(',').map(s => ({ nombre: s.trim(), stock: -1 }));
+                }
+
                 const listaSaboresHtml = saboresArr.length > 0 
-                    ? saboresArr.map(s => `<span class="inline-block bg-zinc-950 border border-zinc-800 text-zinc-300 px-2 py-0.5 rounded text-[11px] mr-1 mb-1">${s.trim()}</span>`).join('')
+                    ? saboresArr.map(s => {
+                        const stockColor = s.stock === 0 ? 'text-red-400 border-red-900/40 bg-red-950/20' 
+                            : s.stock <= 5 && s.stock >= 0 ? 'text-amber-400 border-amber-900/40 bg-amber-950/20' 
+                            : 'text-zinc-300 border-zinc-800 bg-zinc-950';
+                        const stockText = s.stock >= 0 ? ` (${s.stock})` : '';
+                        return `<span class="inline-block ${stockColor} border px-2 py-0.5 rounded text-[11px] mr-1 mb-1 font-medium">${s.nombre}${stockText}</span>`;
+                    }).join('')
                     : '<span class="text-zinc-600 italic text-xs">Sin sabores</span>';
-                const stockNum = Number(p.stock) || 0;
-                const stockColor = stockNum === 0 ? 'text-red-400' : stockNum <= 5 ? 'text-amber-400' : 'text-green-400';
+
+                const stockTotal = saboresArr.reduce((sum, s) => sum + (s.stock >= 0 ? s.stock : 0), 0);
+                const stockColor = stockTotal === 0 ? 'text-red-400' : stockTotal <= 5 ? 'text-amber-400' : 'text-green-400';
 
                 return `
                 <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
@@ -228,7 +250,7 @@
                     <td class="py-3 px-4 font-bold text-white">${p.nombre}</td>
                     <td class="py-3 px-4"><span class="bg-zinc-800 px-2 py-0.5 rounded text-xs text-zinc-400">${p.categoria}</span></td>
                     <td class="py-3 px-4 max-w-xs">${listaSaboresHtml}</td>
-                    <td class="py-3 px-4 font-mono font-bold ${stockColor}">${stockNum}u</td>
+                    <td class="py-3 px-4 font-mono font-bold ${stockColor}">${stockTotal}u</td>
                     <td class="py-3 px-4 text-cyan-400 font-mono">$${p.precio.toLocaleString()}</td>
                     <td class="py-3 px-4 text-right space-x-2">
                         <button onclick="activarEditarProducto(${p.id})" class="text-amber-400 hover:text-amber-300 text-xs bg-amber-950/30 border border-amber-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">Editar ✏️</button>
@@ -307,13 +329,20 @@
             document.getElementById("prod-cat").value = prod.categoria;
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
-            document.getElementById("prod-stock").value = prod.stock || 0;
 
-            // Re-armar caja de sabores
+            // Re-armar caja de sabores con stock real desde la BD
             contenedorSabores.innerHTML = "";
             if(prod.sabores) {
                 const saboresArr = Array.isArray(prod.sabores) ? prod.sabores : String(prod.sabores).split(',');
-                saboresArr.forEach(s => agregarFilaSabor(s.trim(), 10));
+                saboresArr.forEach(s => {
+                    if (typeof s === 'object' && s.nombre) {
+                        // Nuevo formato: {nombre, stock}
+                        agregarFilaSabor(s.nombre.trim(), Number(s.stock || 0));
+                    } else {
+                        // Formato legacy: string
+                        agregarFilaSabor(String(s).trim(), 0);
+                    }
+                });
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -388,13 +417,18 @@
             }
         });
 
-        // ENVIAR FORMULARIO PRODUCTOS (POST o PUT)
+        // ENVIAR FORMULARIO PRODUCTOS (POST o PUT) - Ahora con stock por sabor
         document.getElementById("form-producto").addEventListener("submit", async (e) => {
             e.preventDefault();
+            
+            // Recolectar sabores con su stock individual
             const arraySabores = [];
             document.querySelectorAll(".fila-sabor").forEach(f => {
                 const nombreSabor = f.querySelector(".input-sabor-nombre").value.trim();
-                if(nombreSabor) arraySabores.push(nombreSabor);
+                const stockSabor = Number(f.querySelector(".input-sabor-stock").value) || 0;
+                if(nombreSabor) {
+                    arraySabores.push({ nombre: nombreSabor, stock: stockSabor });
+                }
             });
 
             const data = {
@@ -403,8 +437,8 @@
                 precio: document.getElementById("prod-precio").value,
                 descripcion: document.getElementById("prod-desc").value,
                 imagen: document.getElementById("prod-img").value,
-                sabores: arraySabores,
-                stock: document.getElementById("prod-stock").value || 0
+                sabores: arraySabores
+                // Stock total se calcula automáticamente en el backend
             };
 
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
@@ -419,7 +453,7 @@
                 if(res.ok) {
                     document.getElementById("btn-cancelar-producto").click();
                     await actualizarTodo();
-                    alert(editProductoId ? "✅ Producto actualizado." : "✅ Producto agregado al catálogo.");
+                    alert(editProductoId ? "✅ Producto actualizado con stock por sabor." : "✅ Producto agregado al catálogo.");
                 } else {
                     const err = await res.json().catch(() => ({}));
                     alert("❌ Error al guardar: " + (err.detalle || err.error || 'Revisa la consola del navegador'));
@@ -454,8 +488,7 @@
             window.location.href = '/admin-login.html';
         });
 
-        // Si cualquier petición a la API responde 401, significa que la
-        // sesión expiró o no es válida: mandamos de vuelta al login.
+        // Si cualquier petición a la API responde 401, redirigir al login
         const fetchOriginal = window.fetch;
         window.fetch = async function (...args) {
             const respuesta = await fetchOriginal(...args);

@@ -3,11 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBflow tech - Tienda Oficial</title>
+    <title>CBflow tech - Tienda Oficial de Vapes | Riohacha, Colombia</title>
+    <meta name="description" content="CBflow tech - La marca #1 de tecnología y vaporizadores en Riohacha, La Guajira. Vapes desechables, pods y líquidos con envío a toda Colombia.">
     <!-- Importamos Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+
+        /* ─── Animaciones ─── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .animate-slideUp { animation: slideUp 0.6s ease-out both; }
+        .animate-slideDown { animation: slideDown 0.5s ease-out both; }
+        .animate-fadeIn { animation: fadeIn 0.6s ease-out both; }
+
+        /* ─── Tarjetas de producto ─── */
+        .producto-card {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        }
+        .producto-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 60px -15px rgba(6, 182, 212, 0.15), 0 0 0 1px rgba(6, 182, 212, 0.1);
+        }
+
+        /* ─── Carrusel ─── */
+        .carrusel-slide {
+            transition: opacity 0.5s ease;
+        }
+        #carrusel-track {
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+        #carrusel-track::-webkit-scrollbar { display: none; }
+        #carrusel-track { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ─── Modal backdrop ─── */
+        #modal-detalle {
+            transition: opacity 0.3s ease;
+        }
+        #contenido-modal-detalle {
+            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        /* ─── Scrollbar personalizado ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(161,161,170,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(161,161,170,0.5); }
+    </style>
 </head>
-<body class="bg-black text-white font-sans antialiased">
+<body class="bg-black text-white antialiased">
 
     <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y CARRITO (Puro Negro) ─── -->
     <div class="bg-black py-4 px-6 border-b border-zinc-900">
@@ -19,7 +87,7 @@
                 </span>
             </a>
             <div class="flex items-center text-sm">
-                <!-- 🛒 BOTÓN DEL HEADER CORREGIDO: Ahora abre el carrito y tiene los IDs correctos -->
+                <!-- 🛒 BOTÓN DEL HEADER -->
                 <button onclick="abrirCarrito()" id="btn-carrito" class="flex items-center gap-2 text-zinc-300 hover:text-cyan-400 transition font-medium cursor-pointer bg-transparent border-none outline-none">
                     <span id="header-carrito-total" class="text-zinc-400 font-mono">$0</span>
                     <span class="text-xl">🛒</span>
@@ -36,16 +104,16 @@
         </p>
     </div>
 
-    <!-- ─── SECCIÓN 3: CARRUSEL DINÁMICO DE NOVEDADES ─── -->
+    <!-- ─── SECCIÓN 3: CARRUSEL DINÁMICO DE NOVEDADES (PREMIUM) ─── -->
     <main class="container mx-auto px-4 my-8 relative group max-w-6xl">
-        <div id="carrusel-track" class="flex overflow-x-auto scroll-smooth snap-x snap-mandatory rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl min-h-[300px] md:min-h-[400px] select-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div id="carrusel-track" class="flex overflow-x-auto scroll-smooth snap-x snap-mandatory rounded-2xl bg-zinc-900 border border-zinc-800/60 shadow-[0_8px_40px_rgba(0,0,0,0.5)] min-h-[300px] md:min-h-[420px] select-none overflow-hidden">
             <div class="w-full flex-shrink-0 flex items-center justify-center text-zinc-500 animate-pulse">
                 Cargando novedades...
             </div>
         </div>
-        <button id="prev-slide" class="absolute left-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-cyan-500 hover:text-black text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 shadow-lg cursor-pointer">❮</button>
-        <button id="next-slide" class="absolute right-6 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-cyan-500 hover:text-black text-white p-3 rounded-full backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 shadow-lg cursor-pointer">❯</button>
-        <div id="carrusel-indicadores" class="flex justify-center gap-2 mt-4"></div>
+        <button id="prev-slide" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❮</button>
+        <button id="next-slide" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❯</button>
+        <div id="carrusel-indicadores" class="flex justify-center gap-3 mt-5"></div>
     </main>
 
     <!-- ─── SECCIÓN 4: NAV DE CATEGORÍAS AUTOMÁTICA ─── -->

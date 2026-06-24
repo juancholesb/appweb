@@ -23,6 +23,30 @@ function obtenerListaProductosGlobal() {
 }
 
 // =========================================================================
+// 🔧 UTILIDADES DE SABORES (nuevo formato {nombre, stock})
+// =========================================================================
+function parsearSabores(saboresRaw) {
+    if (!saboresRaw) return [];
+    if (Array.isArray(saboresRaw)) {
+        return saboresRaw.map(s => {
+            if (typeof s === 'object' && s.nombre) return { nombre: s.nombre.trim(), stock: Number(s.stock || 0) };
+            return { nombre: String(s).trim(), stock: -1 }; // -1 = stock desconocido
+        });
+    }
+    if (typeof saboresRaw === 'string') {
+        return saboresRaw.split(',').map(s => ({ nombre: s.trim(), stock: -1 }));
+    }
+    return [];
+}
+
+function obtenerStockTotal(sabores) {
+    const parsed = parsearSabores(sabores);
+    if (parsed.length === 0) return -1;
+    if (parsed.some(s => s.stock === -1)) return -1;
+    return parsed.reduce((sum, s) => sum + s.stock, 0);
+}
+
+// =========================================================================
 // 🚀 2. INICIALIZADOR AUTOMÁTICO (Conectado al Servidor / Fallback Local)
 // =========================================================================
 document.addEventListener("DOMContentLoaded", async () => {
@@ -76,7 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // =========================================================================
-// 🎡 RENDERIZADOR DEL CARRUSEL DE PROMOCIONES
+// 🎡 RENDERIZADOR DEL CARRUSEL DE PROMOCIONES (PREMIUM)
 // =========================================================================
 function renderizarCarrusel(promociones) {
     const track = document.getElementById("carrusel-track");
@@ -84,35 +108,75 @@ function renderizarCarrusel(promociones) {
     if (!track) return;
 
     track.innerHTML = promociones.map((p, i) => `
-        <div class="min-w-full snap-start relative flex items-center justify-center overflow-hidden"
-             style="min-height:300px; background: ${p.color_fondo || p.colorFondo || '#18181b'}">
-            ${p.imagen ? `<img src="${p.imagen}" class="absolute inset-0 w-full h-full object-cover opacity-30" alt="">` : ''}
-            <div class="relative z-10 text-center px-8 py-12 max-w-2xl">
-                ${p.subtitulo ? `<p class="text-cyan-400 text-xs font-bold uppercase tracking-widest mb-3">${p.subtitulo}</p>` : ''}
-                <h2 class="text-white text-3xl md:text-5xl font-black mb-4 leading-tight">${p.titulo || ''}</h2>
-                ${p.descripcion ? `<p class="text-zinc-300 text-sm mb-6">${p.descripcion}</p>` : ''}
-                ${p.enlace ? `<a href="${p.enlace}" class="inline-block bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-6 py-3 rounded-xl transition">${p.texto_boton || p.textoBoton || 'Ver más'}</a>` : ''}
+        <div class="carrusel-slide min-w-full snap-start relative flex items-center justify-center overflow-hidden"
+             style="min-height:300px;">
+            <!-- Imagen de fondo a pantalla completa -->
+            ${p.imagen ? `<img src="${p.imagen}" class="absolute inset-0 w-full h-full object-cover" alt="" style="filter: brightness(0.35) saturate(1.2);">` : ''}
+            <!-- Overlay gradiente premium -->
+            <div class="absolute inset-0" style="background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, rgba(6,182,212,0.15) 100%);"></div>
+            <!-- Efecto de partículas / brillo sutil -->
+            <div class="absolute inset-0 opacity-30" style="background: radial-gradient(circle at 70% 30%, rgba(6,182,212,0.3) 0%, transparent 50%);"></div>
+            <!-- Contenido con animación -->
+            <div class="relative z-10 text-center px-8 py-12 max-w-2xl carrusel-contenido">
+                ${p.subtitulo ? `<p class="text-cyan-400 text-xs font-bold uppercase tracking-[0.3em] mb-4 animate-slideDown" style="text-shadow: 0 0 20px rgba(6,182,212,0.5);">${p.subtitulo}</p>` : ''}
+                <h2 class="text-white text-3xl md:text-5xl font-black mb-5 leading-tight animate-slideUp" style="text-shadow: 0 4px 30px rgba(0,0,0,0.8);">${p.titulo || ''}</h2>
+                ${p.descripcion ? `<p class="text-zinc-300/90 text-sm mb-7 max-w-lg mx-auto animate-fadeIn" style="animation-delay: 0.3s;">${p.descripcion}</p>` : ''}
+                ${p.enlace ? `
+                    <a href="${p.enlace}" class="inline-block bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] hover:scale-105 animate-fadeIn" style="animation-delay: 0.5s;">
+                        ${p.texto_boton || p.textoBoton || 'Ver más'} →
+                    </a>` : ''}
             </div>
+            <!-- Línea decorativa inferior -->
+            <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
         </div>
     `).join('');
 
+    // Indicadores tipo barra con progreso
     if (indicadores) {
         indicadores.innerHTML = promociones.map((_, i) =>
-            `<button onclick="irASlide(${i})" class="w-2 h-2 rounded-full bg-zinc-600 transition carrusel-dot" data-index="${i}"></button>`
+            `<button onclick="irASlide(${i})" class="carrusel-barra relative h-1 rounded-full overflow-hidden transition-all duration-300 cursor-pointer" data-index="${i}" style="width: ${promociones.length > 1 ? '40px' : '60px'}; background: rgba(161,161,170,0.3);">
+                <span class="carrusel-barra-progreso absolute inset-0 rounded-full bg-cyan-400 origin-left scale-x-0 transition-transform"></span>
+            </button>`
         ).join('');
     }
 
     // Controles prev/next
     let slideActual = 0;
     const totalSlides = promociones.length;
+    let autoSlideInterval;
 
     window.irASlide = function(index) {
         slideActual = (index + totalSlides) % totalSlides;
         track.scrollTo({ left: track.clientWidth * slideActual, behavior: 'smooth' });
-        document.querySelectorAll('.carrusel-dot').forEach((dot, i) => {
-            dot.classList.toggle('bg-cyan-400', i === slideActual);
-            dot.classList.toggle('bg-zinc-600', i !== slideActual);
+        
+        document.querySelectorAll('.carrusel-barra').forEach((barra, i) => {
+            const progreso = barra.querySelector('.carrusel-barra-progreso');
+            if (i === slideActual) {
+                barra.style.width = promociones.length > 1 ? '60px' : '60px';
+                barra.style.background = 'rgba(6,182,212,0.2)';
+                if (progreso) {
+                    progreso.style.transition = 'none';
+                    progreso.style.transform = 'scaleX(0)';
+                    setTimeout(() => {
+                        progreso.style.transition = 'transform 5s linear';
+                        progreso.style.transform = 'scaleX(1)';
+                    }, 50);
+                }
+            } else {
+                barra.style.width = '40px';
+                barra.style.background = 'rgba(161,161,170,0.3)';
+                if (progreso) {
+                    progreso.style.transition = 'none';
+                    progreso.style.transform = 'scaleX(0)';
+                }
+            }
         });
+
+        // Reset auto-slide timer
+        if (autoSlideInterval) clearInterval(autoSlideInterval);
+        if (totalSlides > 1) {
+            autoSlideInterval = setInterval(() => irASlide(slideActual + 1), 5000);
+        }
     };
 
     const btnPrev = document.getElementById("prev-slide");
@@ -120,9 +184,8 @@ function renderizarCarrusel(promociones) {
     if (btnPrev) btnPrev.onclick = () => irASlide(slideActual - 1);
     if (btnNext) btnNext.onclick = () => irASlide(slideActual + 1);
 
-    // Auto-slide cada 5 segundos si hay más de 1 slide
     if (totalSlides > 1) {
-        setInterval(() => irASlide(slideActual + 1), 5000);
+        autoSlideInterval = setInterval(() => irASlide(slideActual + 1), 5000);
     }
 
     irASlide(0);
@@ -201,7 +264,7 @@ const productosPorDefecto = [
 ];
 
 // =========================================================================
-// 📦 3. RENDERIZADOR DE PRODUCTOS EN VITRINA (CON SABORES)
+// 📦 3. RENDERIZADOR DE PRODUCTOS EN VITRINA (PREMIUM)
 // =========================================================================
 function renderizarProductos(productos) {
     const contenedor = getContenedorProductos();
@@ -212,53 +275,82 @@ function renderizarProductos(productos) {
         return;
     }
 
-    contenedor.innerHTML = productos.map(p => {
-        const listaSabores = p.sabores 
-            ? (Array.isArray(p.sabores) ? p.sabores : p.sabores.split(",")) 
-            : [];
+    contenedor.innerHTML = productos.map((p, index) => {
+        const saboresParsed = parsearSabores(p.sabores);
+        const stockTotal = obtenerStockTotal(p.sabores);
+        const tieneStock = stockTotal === -1 || stockTotal > 0;
+        const agotado = stockTotal === 0;
+
+        // Badge de stock
+        let stockBadge = '';
+        if (stockTotal >= 0) {
+            if (agotado) {
+                stockBadge = `<span class="inline-flex items-center gap-1 bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 px-2 py-0.5 rounded-full uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Agotado</span>`;
+            } else if (stockTotal <= 5) {
+                stockBadge = `<span class="inline-flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>Últimas ${stockTotal}u</span>`;
+            } else {
+                stockBadge = `<span class="inline-flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-full uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>${stockTotal} disp.</span>`;
+            }
+        }
+
+        // Sabores como select con stock
+        let saboresHtml = '';
+        if (saboresParsed.length > 0) {
+            saboresHtml = `
+                <div class="mb-3" onclick="event.stopPropagation()">
+                    <label class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1.5">💨 Sabor:</label>
+                    <select id="select-sabor-${p.id}" class="w-full bg-zinc-950/80 border border-zinc-700/50 text-xs text-zinc-200 p-2 rounded-xl outline-none focus:border-cyan-500/50 cursor-pointer font-medium backdrop-blur-sm">
+                        ${saboresParsed.map(s => {
+                            const stockInfo = s.stock >= 0 ? ` (${s.stock > 0 ? s.stock + ' disp.' : 'Agotado'})` : '';
+                            const disabled = s.stock === 0 ? 'disabled' : '';
+                            return `<option value="${s.nombre}" ${disabled} ${s.stock === 0 ? 'class="text-zinc-600"' : ''}>${s.nombre}${stockInfo}</option>`;
+                        }).join('')}
+                    </select>
+                </div>
+            `;
+        }
 
         return `
         <div onclick="abrirDetalleProducto(${p.id})" 
-             class="bg-zinc-900/90 border border-zinc-800 p-4 rounded-2xl shadow-xl flex flex-col justify-between group cursor-pointer hover:border-zinc-700 transition-all duration-300 relative overflow-hidden">
+             class="producto-card group cursor-pointer relative overflow-hidden rounded-2xl ${agotado ? 'opacity-60' : ''}"
+             style="animation: fadeInUp 0.5s ease-out ${index * 0.08}s both;">
             
-            <div>
-                <div class="bg-zinc-950 p-3 rounded-xl flex justify-center items-center h-48 mb-4 relative overflow-hidden">
-                    <img src="${p.imagen}" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" alt="${p.nombre}">
+            <!-- Fondo con glassmorphism -->
+            <div class="absolute inset-0 bg-gradient-to-b from-zinc-900/95 via-zinc-900/98 to-zinc-950 border border-zinc-700/30 rounded-2xl group-hover:border-cyan-500/30 transition-all duration-500"></div>
+            <!-- Resplandor hover -->
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500/0 via-cyan-500/0 to-cyan-500/0 group-hover:from-cyan-500/5 group-hover:via-cyan-400/10 group-hover:to-cyan-500/5 rounded-2xl blur-xl transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
+            
+            <div class="relative z-10 p-4 flex flex-col justify-between h-full">
+                <!-- Imagen del producto -->
+                <div class="relative rounded-xl overflow-hidden mb-4 bg-gradient-to-br from-zinc-800/50 to-zinc-900/50 p-4 flex justify-center items-center h-48">
+                    <!-- Resplandor detrás del producto -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <img src="${p.imagen}" class="h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)]" alt="${p.nombre}" loading="lazy">
                 </div>
 
-                <span class="inline-block bg-cyan-950/50 border border-cyan-800/40 text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2">
-                    ${p.categoria || 'Desechables'}
-                </span>
-                ${(Number(p.stock) > 0)
-                    ? `<span class="inline-block bg-green-950/40 border border-green-800/30 text-[10px] font-bold text-green-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2 ml-1">${p.stock} disponibles</span>`
-                    : (p.stock === 0 || p.stock === '0')
-                    ? `<span class="inline-block bg-red-950/40 border border-red-800/30 text-[10px] font-bold text-red-400 px-2 py-0.5 rounded uppercase tracking-wider mb-2 ml-1">Agotado</span>`
-                    : ''
-                }
+                <!-- Info -->
+                <div class="flex flex-wrap gap-1.5 mb-2.5">
+                    <span class="inline-flex items-center bg-cyan-500/10 border border-cyan-500/20 text-[10px] font-bold text-cyan-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        ${p.categoria || 'Desechables'}
+                    </span>
+                    ${stockBadge}
+                </div>
 
-                <h3 class="text-white font-bold text-md tracking-tight group-hover:text-cyan-400 transition-colors mb-1">${p.nombre}</h3>
-                <p class="text-zinc-500 text-xs font-light line-clamp-2 mb-3">${p.descripcion || 'Sin descripción disponible.'}</p>
+                <h3 class="text-white font-bold text-[15px] tracking-tight group-hover:text-cyan-400 transition-colors duration-300 mb-1 line-clamp-2">${p.nombre}</h3>
+                <p class="text-zinc-500 text-[11px] font-light line-clamp-2 mb-3 leading-relaxed">${p.descripcion || 'Sin descripción disponible.'}</p>
                 
-                <div class="mb-4" onclick="event.stopPropagation()">
-                    <label class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-1">Elegir Sabor:</label>
-                    <select id="select-sabor-${p.id}" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 p-2 rounded-xl outline-none focus:border-cyan-500 cursor-pointer font-medium">
-                        ${listaSabores.length > 0 
-                            ? listaSabores.map(sabor => `<option value="${sabor.trim()}">💨 ${sabor.trim()}</option>`).join('')
-                            : '<option value="Original">💨 Sabor Original / Único</option>'
-                        }
-                    </select>
+                ${saboresHtml}
+
+                <!-- Precio y botón -->
+                <div class="flex justify-between items-center border-t border-zinc-800/50 pt-3 mt-auto" onclick="event.stopPropagation()">
+                    <span class="text-cyan-400 font-mono font-black text-lg tracking-tight">
+                        $${Number(p.precio).toLocaleString('es-CO')}
+                    </span>
+                    <button onclick="agregarAlCarritoDesdeVitrina(${p.id})" 
+                            class="bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[11px] px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-all duration-300 cursor-pointer shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] active:scale-95 ${agotado ? 'opacity-50 pointer-events-none' : ''}">
+                        🛒 Agregar
+                    </button>
                 </div>
-            </div>
-
-            <div class="flex justify-between items-center border-t border-zinc-800/50 pt-3 mt-auto" onclick="event.stopPropagation()">
-                <button onclick="agregarAlCarritoDesdeVitrina(${p.id})" 
-                        class="bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs px-3 py-2 rounded-xl flex items-center gap-1 transition cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.2)]">
-                    🛒 Agregar
-                </button>
-
-                <span class="text-cyan-400 font-mono font-bold text-md">
-                    $${Number(p.precio).toLocaleString('es-CO')}
-                </span>
             </div>
         </div>
         `;
@@ -266,7 +358,7 @@ function renderizarProductos(productos) {
 }
 
 // =========================================================================
-// 👁️ 4. VENTANA EMERGENTE / MODAL DETALLE
+// 👁️ 4. VENTANA EMERGENTE / MODAL DETALLE (PREMIUM)
 // =========================================================================
 window.abrirDetalleProducto = function(id) {
     const listaGlobal = obtenerListaProductosGlobal();
@@ -277,60 +369,142 @@ window.abrirDetalleProducto = function(id) {
     const contenido = document.getElementById("contenido-modal-detalle");
     if (!modal || !contenido) return;
 
-    const listaSabores = prod.sabores 
-        ? (Array.isArray(prod.sabores) ? prod.sabores : prod.sabores.split(",")) 
-        : [];
+    const saboresParsed = parsearSabores(prod.sabores);
+    const stockTotal = obtenerStockTotal(prod.sabores);
+    const agotado = stockTotal === 0;
+    const primerSaborDisponible = saboresParsed.find(s => s.stock !== 0);
 
+    // Generar chips de sabores
     let saboresHtml = "";
-    if (listaSabores.length > 0) {
+    if (saboresParsed.length > 0) {
         saboresHtml = `
             <div class="mb-5">
-                <label class="block text-[10px] text-zinc-500 uppercase tracking-wider font-bold mb-2">Selecciona tu Sabor:</label>
-                <select id="modal-sabor-select" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 rounded-xl p-3 outline-none focus:border-cyan-500 cursor-pointer">
-                    ${listaSabores.map(s => `<option value="${s.trim()}">💨 ${s.trim()}</option>`).join('')}
-                </select>
+                <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">Selecciona tu Sabor</label>
+                <div class="flex flex-wrap gap-2" id="modal-sabores-chips">
+                    ${saboresParsed.map((s, i) => {
+                        const esAgotado = s.stock === 0;
+                        const esSeleccionado = primerSaborDisponible ? s.nombre === primerSaborDisponible.nombre : i === 0;
+                        const stockLabel = s.stock >= 0 ? (s.stock > 0 ? `${s.stock}u` : 'Agotado') : '';
+                        return `
+                            <button type="button" 
+                                onclick="seleccionarSaborModal('${s.nombre.replace(/'/g, "\\'")}')" 
+                                data-sabor="${s.nombre}"
+                                class="sabor-chip px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer flex items-center gap-2
+                                ${esAgotado 
+                                    ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 cursor-not-allowed opacity-50' 
+                                    : esSeleccionado 
+                                        ? 'bg-cyan-500/15 border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)]' 
+                                        : 'bg-zinc-900/60 border-zinc-700/40 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800/60'
+                                }"
+                                ${esAgotado ? 'disabled' : ''}>
+                                <span>💨</span>
+                                <span>${s.nombre}</span>
+                                ${stockLabel ? `<span class="text-[9px] font-mono ${esAgotado ? 'text-red-500' : 'text-zinc-500'}">${stockLabel}</span>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+                <input type="hidden" id="modal-sabor-select" value="${primerSaborDisponible ? primerSaborDisponible.nombre : (saboresParsed[0]?.nombre || 'Original')}">
             </div>
         `;
     } else {
-        saboresHtml = `<p class="text-xs text-zinc-500 italic mb-5">Sabor original estándar listo para envío.</p>`;
+        saboresHtml = `
+            <p class="text-xs text-zinc-500 italic mb-5 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                Sabor original estándar listo para envío.
+            </p>
+            <input type="hidden" id="modal-sabor-select" value="Original">
+        `;
+    }
+
+    // Stock badge para el modal
+    let stockBadgeModal = '';
+    if (stockTotal >= 0) {
+        if (agotado) {
+            stockBadgeModal = `<span class="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Agotado</span>`;
+        } else {
+            stockBadgeModal = `<span class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>${stockTotal} disponibles</span>`;
+        }
     }
 
     contenido.innerHTML = `
-        <button onclick="cerrarDetalleProducto()" class="absolute top-4 right-4 text-zinc-400 bg-zinc-950/60 p-2.5 rounded-full z-20 cursor-pointer hover:text-white border border-zinc-800 transition active:scale-90">✕</button>
+        <!-- Botón cerrar -->
+        <button onclick="cerrarDetalleProducto()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
+        
         <div class="grid grid-cols-1 md:grid-cols-2">
-            <div class="bg-zinc-950 p-8 flex items-center justify-center min-h-[250px] relative">
-                <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 to-transparent opacity-60 blur-3xl"></div>
-                <img src="${prod.imagen}" class="max-h-56 object-contain filter drop-shadow-[0_12px_24px_rgba(6,182,212,0.3)]">
+            <!-- Imagen con efecto premium -->
+            <div class="relative p-8 flex items-center justify-center min-h-[280px] overflow-hidden bg-zinc-950">
+                <!-- Resplandor difuso del producto -->
+                <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-purple-500/5"></div>
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-cyan-500/10 rounded-full blur-[60px]"></div>
+                <!-- Patrón decorativo -->
+                <div class="absolute top-4 left-4 w-16 h-16 border border-cyan-500/10 rounded-full"></div>
+                <div class="absolute bottom-4 right-4 w-8 h-8 border border-cyan-500/10 rounded-full"></div>
+                <!-- Imagen -->
+                <img src="${prod.imagen}" class="max-h-64 object-contain relative z-10 drop-shadow-[0_20px_40px_rgba(6,182,212,0.2)] hover:scale-105 transition-transform duration-500" alt="${prod.nombre}">
             </div>
-            <div class="p-6 bg-zinc-900 flex flex-col justify-between">
+            
+            <!-- Info del producto -->
+            <div class="p-6 md:p-8 bg-zinc-900 flex flex-col justify-between">
                 <div>
-                    <span class="text-[9px] tracking-widest font-bold uppercase text-cyan-400 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/30 inline-block mb-3">${prod.categoria || 'Desechables'}</span>
-                    <h3 class="text-xl font-black text-white mb-2">${prod.nombre}</h3>
-                    <p class="text-zinc-400 text-xs mb-5 font-light leading-relaxed">${prod.descripcion || 'Sin descripción disponible.'}</p>
+                    <!-- Badges -->
+                    <div class="flex flex-wrap items-center gap-2 mb-4">
+                        <span class="text-[9px] tracking-widest font-bold uppercase text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20 inline-flex items-center gap-1">
+                            <span class="w-1 h-1 rounded-full bg-cyan-400"></span>${prod.categoria || 'Desechables'}
+                        </span>
+                        ${stockBadgeModal}
+                    </div>
+                    
+                    <h3 class="text-xl md:text-2xl font-black text-white mb-3 leading-tight">${prod.nombre}</h3>
+                    <p class="text-zinc-400 text-sm mb-6 font-light leading-relaxed">${prod.descripcion || 'Sin descripción disponible.'}</p>
                     
                     ${saboresHtml}
                     
+                    <!-- Cantidad -->
                     <div class="mb-4">
-                        <label class="block text-[10px] text-zinc-500 uppercase tracking-wider font-bold mb-2">Cantidad:</label>
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="alterarCantidadModal(-1)" class="w-10 h-10 bg-zinc-950 border border-zinc-800 text-md font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition">-</button>
-                            <input type="number" id="modal-cantidad-input" value="1" min="1" class="w-14 h-10 bg-zinc-950 border border-zinc-800 text-center text-sm font-mono text-white rounded-xl outline-none" readonly>
-                            <button type="button" onclick="alterarCantidadModal(1)" class="w-10 h-10 bg-zinc-950 border border-zinc-800 text-md font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition">+</button>
+                        <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Cantidad</label>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="alterarCantidadModal(-1)" class="w-11 h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">−</button>
+                            <input type="number" id="modal-cantidad-input" value="1" min="1" class="w-14 h-11 bg-zinc-950/80 border border-zinc-700/50 text-center text-sm font-mono font-bold text-white rounded-xl outline-none" readonly>
+                            <button type="button" onclick="alterarCantidadModal(1)" class="w-11 h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">+</button>
                         </div>
                     </div>
                 </div>
-                <div class="pt-4 border-t border-zinc-800/60 flex items-center justify-between gap-4 mt-6">
+                
+                <!-- Subtotal y CTA -->
+                <div class="pt-5 border-t border-zinc-800/60 flex items-center justify-between gap-4 mt-4">
                     <div class="flex flex-col">
-                        <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Subtotal</span>
-                        <span id="modal-precio-total" class="text-xl font-black text-white font-mono" data-base-price="${prod.precio}">$${Number(prod.precio).toLocaleString('es-CO')}</span>
+                        <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Subtotal</span>
+                        <span id="modal-precio-total" class="text-2xl font-black text-white font-mono" data-base-price="${prod.precio}">$${Number(prod.precio).toLocaleString('es-CO')}</span>
                     </div>
-                    <button onclick="agregarAlCarritoDesdeModal(${prod.id}, event)" class="flex-1 bg-cyan-500 hover:bg-cyan-400 text-black font-black text-xs py-3.5 px-4 rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.25)] transition-all transform active:scale-95 cursor-pointer">Añadir al Carrito 🛒</button>
+                    <button onclick="agregarAlCarritoDesdeModal(${prod.id}, event)" 
+                            class="flex-1 max-w-[220px] bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-sm py-3.5 px-4 rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] transition-all duration-300 transform active:scale-95 cursor-pointer ${agotado ? 'opacity-50 pointer-events-none' : ''}">
+                        Añadir al Carrito 🛒
+                    </button>
                 </div>
             </div>
         </div>
     `;
+
+    // Mostrar modal con animación
     modal.classList.remove("hidden");
+    modal.style.display = "flex";
     setTimeout(() => modal.classList.remove("opacity-0"), 20);
+};
+
+// Seleccionar sabor en modal (chips)
+window.seleccionarSaborModal = function(sabor) {
+    document.querySelectorAll('.sabor-chip:not([disabled])').forEach(chip => {
+        const esSelecc = chip.dataset.sabor === sabor;
+        chip.className = chip.className.replace(/bg-cyan-500\/15|border-cyan-500\/50|text-cyan-400|shadow-\[0_0_15px_rgba\(6,182,212,0\.15\)\]|bg-zinc-900\/60|border-zinc-700\/40|text-zinc-300|hover:border-zinc-500|hover:bg-zinc-800\/60/g, '');
+        if (esSelecc) {
+            chip.classList.add('bg-cyan-500/15', 'border-cyan-500/50', 'text-cyan-400', 'shadow-[0_0_15px_rgba(6,182,212,0.15)]');
+        } else {
+            chip.classList.add('bg-zinc-900/60', 'border-zinc-700/40', 'text-zinc-300', 'hover:border-zinc-500', 'hover:bg-zinc-800/60');
+        }
+    });
+    const hiddenInput = document.getElementById("modal-sabor-select");
+    if (hiddenInput) hiddenInput.value = sabor;
 };
 
 window.alterarCantidadModal = function(cambio) {
@@ -350,7 +524,10 @@ window.cerrarDetalleProducto = function() {
     const modal = document.getElementById("modal-detalle");
     if(modal) {
         modal.classList.add("opacity-0");
-        setTimeout(() => modal.classList.add("hidden"), 300);
+        setTimeout(() => {
+            modal.classList.add("hidden");
+            modal.style.display = "";
+        }, 300);
     }
 };
 
@@ -421,12 +598,16 @@ window.agregarAlCarritoDesdeModal = function(id, event) {
     if (event && event.currentTarget) {
         const boton = event.currentTarget;
         const textoOriginal = boton.innerHTML;
-        boton.innerHTML = "✅ ¡Añadido Exitosamente!";
+        boton.innerHTML = "✅ ¡Añadido!";
+        boton.classList.add("from-emerald-500", "to-emerald-400");
+        boton.classList.remove("from-cyan-500", "to-cyan-400");
         setTimeout(() => { 
-            boton.innerHTML = textoOriginal; 
+            boton.innerHTML = textoOriginal;
+            boton.classList.remove("from-emerald-500", "to-emerald-400");
+            boton.classList.add("from-cyan-500", "to-cyan-400");
             cerrarDetalleProducto();
             window.abrirCarrito();
-        }, 400);
+        }, 500);
     } else {
         cerrarDetalleProducto();
         window.abrirCarrito();
@@ -459,11 +640,9 @@ function actualizarInterfazCarrito() {
         contenedorItems.innerHTML = carrito.map((item, index) => {
             const productoOriginal = listaGlobal.find(p => Number(p.id) === Number(item.id));
             
-            let listaSabores = [item.sabor || "Original"];
+            let listaSabores = [{ nombre: item.sabor || "Original", stock: -1 }];
             if (productoOriginal && productoOriginal.sabores) {
-                listaSabores = Array.isArray(productoOriginal.sabores) 
-                    ? productoOriginal.sabores 
-                    : productoOriginal.sabores.split(",");
+                listaSabores = parsearSabores(productoOriginal.sabores);
             }
 
             const precioUnitario = Number(item.precio || 0);
@@ -483,8 +662,9 @@ function actualizarInterfazCarrito() {
                         <select onchange="window.cambiarSaborEnCarrito(${item.id}, '${saborEscapado}', this.value)" 
                                 class="bg-zinc-950 border border-zinc-800 text-[10px] text-cyan-400 font-black uppercase tracking-wider py-0.5 px-1.5 rounded-md outline-none focus:border-cyan-500 cursor-pointer max-w-full truncate">
                             ${listaSabores.map(sabor => {
-                                const sabClean = sabor.trim();
-                                return `<option value="${sabClean}" ${sabClean.toLowerCase() === saborSeguro.toLowerCase() ? 'selected' : ''}>💨 ${sabClean}</option>`;
+                                const sabClean = sabor.nombre.trim();
+                                const stockInfo = sabor.stock >= 0 ? ` (${sabor.stock})` : '';
+                                return `<option value="${sabClean}" ${sabClean.toLowerCase() === saborSeguro.toLowerCase() ? 'selected' : ''}>💨 ${sabClean}${stockInfo}</option>`;
                             }).join('')}
                         </select>
                     </div>
@@ -512,13 +692,13 @@ function actualizarInterfazCarrito() {
 }
 
 // =========================================================================
-// 🔄 6. CONTROLES AVANZADOS DEL CARRITO (EXPUESTOS A WINDOW)
+// 🔄 6. CONTROLES AVANZADOS DEL CARRITO
 // =========================================================================
 window.cambiarCantidad = function(id, sabor, cambio) {
     const sabBuscado = String(sabor || '').trim().toLowerCase();
 
     const item = carrito.find(p => 
-        Number(p.id) === Number(id) && 
+        String(p.id) === String(id) && 
         String(p.sabor || '').trim().toLowerCase() === sabBuscado
     );
     if (!item) return;
@@ -526,8 +706,10 @@ window.cambiarCantidad = function(id, sabor, cambio) {
     item.cantidad += cambio;
 
     if (item.cantidad <= 0) {
-        window.eliminarDelCarrito(id, sabor);
-        return;
+        carrito = carrito.filter(p => !(
+            String(p.id) === String(id) && 
+            String(p.sabor || '').trim().toLowerCase() === sabBuscado
+        ));
     }
 
     localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
@@ -541,20 +723,20 @@ window.cambiarSaborEnCarrito = function(id, saborAnterior, nuevoSabor) {
     if (sabAntClean === sabNueClean) return;
 
     const itemAModificar = carrito.find(p => 
-        Number(p.id) === Number(id) && 
+        String(p.id) === String(id) && 
         String(p.sabor || '').trim().toLowerCase() === sabAntClean
     );
     if (!itemAModificar) return;
 
     const itemDuplicado = carrito.find(p => 
-        Number(p.id) === Number(id) && 
+        String(p.id) === String(id) && 
         String(p.sabor || '').trim().toLowerCase() === sabNueClean
     );
 
     if (itemDuplicado) {
-        itemDuplicado.amount += itemAModificar.cantidad;
+        itemDuplicado.cantidad += itemAModificar.cantidad;
         carrito = carrito.filter(p => !(
-            Number(p.id) === Number(id) && 
+            String(p.id) === String(id) && 
             String(p.sabor || '').trim().toLowerCase() === sabAntClean
         ));
     } else {
@@ -568,7 +750,7 @@ window.cambiarSaborEnCarrito = function(id, saborAnterior, nuevoSabor) {
 window.eliminarDelCarrito = function(id, sabor) {
     const sabBuscado = String(sabor || '').trim().toLowerCase();
     carrito = carrito.filter(p => !(
-        Number(p.id) === Number(id) && 
+        String(p.id) === String(id) && 
         String(p.sabor || '').trim().toLowerCase() === sabBuscado
     ));
     localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
@@ -675,125 +857,4 @@ window.enviarPedidoWhatsApp = async function() {
 
     const urlValidada = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
     window.open(urlValidada, '_blank');
-};
-// =========================================================================
-// 🔄 9. CONTROLADOR DE CANTIDADES (NORMALIZACIÓN ABSOLUTA)
-// =========================================================================
-window.cambiarCantidad = function(id, sabor, cambio) {
-    const sabBuscado = String(sabor || '').trim().toLowerCase();
-
-    // Buscamos ignorando espacios ocultos y mayúsculas
-    const item = carrito.find(p => 
-        String(p.id) === String(id) && 
-        String(p.sabor || '').trim().toLowerCase() === sabBuscado
-    );
-    if (!item) return;
-
-    item.cantidad += cambio;
-
-    if (item.cantidad <= 0) {
-        carrito = carrito.filter(p => !(
-            String(p.id) === String(id) && 
-            String(p.sabor || '').trim().toLowerCase() === sabBuscado
-        ));
-    }
-
-    localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
-    actualizarInterfazCarrito();
-};
-
-// =========================================================================
-// 🔄 10. CAMBIAR SABOR DESDE EL CARRITO (NORMALIZACIÓN ABSOLUTA)
-// =========================================================================
-window.cambiarSaborEnCarrito = function(id, saborAnterior, nuevoSabor) {
-    const sabAntClean = String(saborAnterior || '').trim().toLowerCase();
-    const sabNueClean = String(nuevoSabor || '').trim().toLowerCase();
-
-    if (sabAntClean === sabNueClean) return;
-
-    const itemAModificar = carrito.find(p => 
-        String(p.id) === String(id) && 
-        String(p.sabor || '').trim().toLowerCase() === sabAntClean
-    );
-    if (!itemAModificar) return;
-
-    const itemDuplicado = carrito.find(p => 
-        String(p.id) === String(id) && 
-        String(p.sabor || '').trim().toLowerCase() === sabNueClean
-    );
-
-    if (itemDuplicado) {
-        itemDuplicado.cantidad += itemAModificar.cantidad;
-        carrito = carrito.filter(p => !(
-            String(p.id) === String(id) && 
-            String(p.sabor || '').trim().toLowerCase() === sabAntClean
-        ));
-    } else {
-        itemAModificar.sabor = nuevoSabor;
-    }
-
-    localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
-    actualizarInterfazCarrito();
-};
-// =========================================================================
-// 📥 11-C. AGREGAR AL CARRITO DESDE EL MODAL DE DETALLES (BLINDADO)
-// =========================================================================
-window.agregarAlCarritoDesdeModal = function(id, event) {
-    // 🛡️ Comparación de ID segura
-    const productoSeleccionado = cacheProductosTienda.find(p => String(p.id) === String(id));
-    if (!productoSeleccionado) return;
-
-    // Capturamos el sabor seleccionado en el menú desplegable del modal
-    const selectSabor = document.getElementById(`modal-select-sabor-${id}`);
-    const saborElegido = selectSabor ? selectSabor.value.trim() : "Original";
-
-    // 🧠 Verificación cruzada limpia
-    const existeEnCarrito = carrito.find(item => 
-        String(item.id) === String(id) && 
-        String(item.sabor || '').trim().toLowerCase() === saborElegido.toLowerCase()
-    );
-
-    if (existeEnCarrito) {
-        existeEnCarrito.cantidad += 1; 
-    } else {
-        carrito.push({
-            id: productoSeleccionado.id,
-            nombre: productoSeleccionado.nombre,
-            precio: Number(productoSeleccionado.precio),
-            imagen: productoSeleccionado.imagen,
-            sabor: saborElegido,
-            cantidad: 1
-        });
-    }
-
-    localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
-    actualizarInterfazCarrito();
-
-    // Animación de feedback en el botón antes de cerrar
-    if (event && event.currentTarget) {
-        const boton = event.currentTarget;
-        const textoOriginal = boton.innerHTML;
-        boton.innerHTML = "✅ ¡Añadido Exitosamente!";
-        
-        setTimeout(() => { 
-            boton.innerHTML = textoOriginal; 
-            if (typeof cerrarModalDetalle === "function") cerrarModalDetalle();
-        }, 600);
-    }
-};
-
-// =========================================================================
-// 🗑️ 12. ELIMINAR PRODUCTO COMPLETO (NORMALIZACIÓN ABSOLUTA)
-// =========================================================================
-window.eliminarDelCarrito = function(id, sabor) {
-    const sabBuscado = String(sabor || '').trim().toLowerCase();
-
-    // Filtramos barriendo cualquier espacio en blanco o diferencia de letras
-    carrito = carrito.filter(p => !(
-        String(p.id) === String(id) && 
-        String(p.sabor || '').trim().toLowerCase() === sabBuscado
-    ));
-
-    localStorage.setItem("cbflow_carrito", JSON.stringify(carrito));
-    actualizarInterfazCarrito();
 };
