@@ -617,6 +617,15 @@ window.abrirDetalleProducto = function(id) {
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
     setTimeout(() => modal.classList.remove("opacity-0"), 20);
+
+    if (window.innerWidth < 768) {
+        setTimeout(() => {
+            const sheet = document.getElementById("contenido-modal-detalle");
+            if (sheet) {
+                sheet.style.transform = "translateY(0)";
+            }
+        }, 20);
+    }
 };
 
 // Cambiar imagen principal del modal
@@ -735,12 +744,17 @@ window.alterarCantidadModal = function(cambio) {
 
 window.cerrarDetalleProducto = function() {
     const modal = document.getElementById("modal-detalle");
+    const sheet = document.getElementById("contenido-modal-detalle");
     if(modal) {
         modal.classList.remove("mobile-sheet");
+        if (sheet && window.innerWidth < 768) {
+            sheet.style.transform = "translateY(100%)";
+        }
         modal.classList.add("opacity-0");
         setTimeout(() => {
             modal.classList.add("hidden");
             modal.style.display = "";
+            if (sheet) sheet.style.transform = "";
         }, 300);
     }
     document.body.style.overflow = "";
