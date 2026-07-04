@@ -1146,3 +1146,20 @@ window.enviarPedidoWhatsApp = async function() {
     const urlValidada = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
     window.open(urlValidada, '_blank');
 };
+
+// 📡 LISTENER: Detectar cambios de stock desde admin
+window.addEventListener('storage', async (e) => {
+    if (e.key === 'cbflow_refrescar_stock') {
+        console.log('📢 Stock actualizado desde admin, recargando productos...');
+        try {
+            const resProd = await fetch('/api/productos');
+            if (resProd.ok) {
+                const productosLive = await resProd.json();
+                cacheProductosTienda = productosLive; 
+                renderizarProductos(productosLive);
+            }
+        } catch (error) {
+            console.warn('No se pudieron recargar productos:', error);
+        }
+    }
+});

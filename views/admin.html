@@ -401,6 +401,8 @@
             const res = await fetch(`/api/pedidos/${id}/confirmar`, { method: 'POST' });
             const data = await res.json();
             alert(res.ok ? '✅ ' + data.mensaje : '❌ ' + (data.error || 'Error'));
+            // Notificar a la tienda que actualice el stock
+            localStorage.setItem('cbflow_refrescar_stock', Date.now().toString());
             await actualizarTodo();
         };
 

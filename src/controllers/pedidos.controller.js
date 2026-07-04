@@ -61,13 +61,30 @@ exports.confirmarPedido = async (req, res) => {
         // Parsear items
         const items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
 
-        // Descontar stock de cada producto
+        // Descontar stock de cada producto considerando sabores
         for (const item of items) {
-            await db.query(`
-                UPDATE productos 
-                SET stock = GREATEST(0, stock - $1)
-                WHERE id = $2
-            `, [item.cantidad, item.id]);
+            // Verificar si el producto tiene sabores con stock individual
+            const saboresRes = await db.query(`
+                SELECT id, stock FROM producto_sabores 
+                WHERE producto_id = $1 AND nombre = $2
+                LIMIT 1
+            `, [item.id, item.sabor || '']);
+
+            if (saboresRes.rows.length > 0) {
+                // Descontar del sabor específico
+                await db.query(`
+                    UPDATE producto_sabores 
+                    SET stock = GREATEST(0, stock - $1)
+                    WHERE id = $2
+                `, [item.cantidad, saboresRes.rows[0].id]);
+            } else {
+                // Si no hay sabores, descontar del stock general del producto
+                await db.query(`
+                    UPDATE productos 
+                    SET stock = GREATEST(0, stock - $1)
+                    WHERE id = $2
+                `, [item.cantidad, item.id]);
+            }
         }
 
         // Marcar pedido como confirmado
