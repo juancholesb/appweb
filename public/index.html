@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBflow tech - Tienda Oficial de Vapes | Riohacha, Colombia</title>
     <meta name="description" content="CBflow tech - La marca #1 de tecnología y vaporizadores en Riohacha, La Guajira. Vapes desechables, pods y líquidos con envío a toda Colombia.">
+    <!-- Meta para color de la barra en Android/iOS -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Evita FOUC en móvil: forzar fondo oscuro y asegurar clase dark temprana -->
+    <style>html,body{background-color:#000!important;color:#fff!important;}</style>
+    <script>if(!document.documentElement.classList.contains('dark')) document.documentElement.classList.add('dark');</script>
     <!-- Importamos Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <!-- Google Fonts - Inter -->
