@@ -943,43 +943,48 @@ window.cerrarCarrito = function() {
 // =========================================================================
 window.toggleDireccion = function() {
     const metodo = document.getElementById("checkout-metodo-entrega").value;
-    const contDir = document.getElementById("contenedor-direccion");
+    const contDir = document.getElementById("contenedor-direccion-barrio");
     const pagoSelect = document.getElementById("checkout-pago");
+    const ubicacion = document.getElementById("checkout-ubicacion").value;
     
-    if (metodo === "recogida_local") {
+    if (metodo === "recogida_local" && ubicacion === "Riohacha") {
         contDir.style.display = "none";
         pagoSelect.innerHTML = `
             <option value="Contra Entrega (Efectivo)">💵 Efectivo al recoger</option>
             <option value="Transferencia / Nequi">📱 Transferencia (Bancolombia / Nequi)</option>
         `;
         pagoSelect.disabled = false;
-    } else {
+    } else if (ubicacion === "Riohacha") {
         contDir.style.display = "block";
-        window.actualizarMetodosPago();
+        pagoSelect.innerHTML = `
+            <option value="Contra Entrega (Efectivo)">💵 Efectivo - Contra Entrega 🛵</option>
+            <option value="Transferencia / Nequi">📱 Transferencia (Bancolombia / Nequi)</option>
+        `;
+        pagoSelect.disabled = false;
     }
 };
 
 window.actualizarMetodosPago = function() {
     const ubicacion = document.getElementById("checkout-ubicacion").value;
     const selectPago = document.getElementById("checkout-pago");
-    
-    if(!selectPago) return;
-    selectPago.innerHTML = ""; 
+    const metodoEntregaSelect = document.getElementById("checkout-metodo-entrega");
     
     if (ubicacion === "Riohacha") {
-        selectPago.innerHTML = `
-            <option value="Contra Entrega">Efectivo - Contra Entrega 🛵</option>
-            <option value="Transferencia Bancaria">Transferencia Bancaria (Bancolombia/Nequi) 🏦</option>
-        `;
-        selectPago.disabled = false;
-    } else if (ubicacion === "Nacional") {
-        selectPago.innerHTML = `
-            <option value="Pago Anticipado (Transferencia)">Pago Anticipado por Transferencia Bancaria 🚚</option>
-        `;
-        selectPago.disabled = false;
+        metodoEntregaSelect.classList.remove("hidden");
+        // Asegurarse de que el toggleDireccion se ejecute
+        toggleDireccion();
     } else {
-        selectPago.innerHTML = `<option value="">Selecciona la ubicación primero...</option>`;
-        selectPago.disabled = true;
+        metodoEntregaSelect.classList.add("hidden");
+        metodoEntregaSelect.value = "envio";
+        document.getElementById("contenedor-direccion-barrio").style.display = "block";
+
+        if (ubicacion === "Nacional") {
+            selectPago.innerHTML = `<option value="Transferencia / Nequi">📱 Transferencia (Bancolombia / Nequi)</option>`;
+            selectPago.disabled = false;
+        } else {
+            selectPago.innerHTML = `<option value="">Selecciona la ubicación primero...</option>`;
+            selectPago.disabled = true;
+        }
     }
 };
 
@@ -1000,11 +1005,19 @@ window.enviarPedidoWhatsApp = async function() {
     let mensaje = `*🚀 NUEVO PEDIDO - CBFLOW TECH*\n`;
     mensaje += `---------------------------\n`;
     mensaje += `👤 *Cliente:* ${nombre}\n`;
-    mensaje += `📦 *Método:* ${metodoEntrega === "recogida_local" ? "🏪 Recoger en Tienda" : "🛵 Envío a Domicilio"}\n`;
-    if (metodoEntrega === "envio") {
-        mensaje += `📍 *Ubicación:* ${ubicacion === "Riohacha" ? "Riohacha (Local)" : "Envío Nacional (Colombia)"}\n`;
+    
+    if (ubicacion === "Riohacha") {
+        mensaje += `📦 *Método:* ${metodoEntrega === "recogida_local" ? "🏪 Recoger en Tienda" : "🛵 Envío a Domicilio"}\n`;
+        if (metodoEntrega === "envio") {
+            mensaje += `📍 *Ubicación:* Riohacha (Local)\n`;
+            mensaje += `🏠 *Dirección:* ${direccion}\n`;
+        }
+    } else {
+        mensaje += `📦 *Método:* 🛵 Envío Nacional\n`;
+        mensaje += `📍 *Ubicación:* Colombia\n`;
         mensaje += `🏠 *Dirección:* ${direccion}\n`;
     }
+    
     mensaje += `💳 *Método de Pago:* ${pago}\n`;
     mensaje += `---------------------------\n`;
     mensaje += `*🛒 DETALLE DE COMPRA:*\n\n`;
