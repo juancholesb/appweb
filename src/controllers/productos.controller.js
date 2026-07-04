@@ -4,26 +4,51 @@ exports.obtenerTodos = async (req, res) => {
     try {
         const resultado = await db.query('SELECT * FROM productos ORDER BY id DESC');
 
-        // Para cada producto, traemos sus sabores con stock individual
+        // Para cada producto, traemos sus sabores, imágenes extra y reseñas
         const productos = await Promise.all(resultado.rows.map(async (p) => {
             const resSabores = await db.query(
                 'SELECT id, nombre, stock FROM producto_sabores WHERE producto_id = $1 ORDER BY id',
                 [p.id]
             );
 
-            // Si el producto tiene sabores en la nueva tabla, los usamos
+            let saboresConStock = [];
+            let stockTotal = 0;
             if (resSabores.rows.length > 0) {
-                const saboresConStock = resSabores.rows;
-                const stockTotal = saboresConStock.reduce((sum, s) => sum + Number(s.stock || 0), 0);
-                return { ...p, sabores: saboresConStock, stock: stockTotal };
+                saboresConStock = resSabores.rows;
+                stockTotal = saboresConStock.reduce((sum, s) => sum + Number(s.stock || 0), 0);
+            } else {
+                let saboresFormateados = p.sabores;
+                if (typeof p.sabores === 'string' && p.sabores.includes(',')) {
+                    saboresFormateados = p.sabores.split(',').map(s => ({ nombre: s.trim(), stock: -1 }));
+                } else if (typeof p.sabores === 'string' && p.sabores) {
+                    saboresFormateados = [{ nombre: p.sabores.trim(), stock: -1 }];
+                } else {
+                    saboresFormateados = [];
+                }
+                saboresConStock = saboresFormateados;
             }
 
-            // Fallback: si aún tiene sabores en formato texto viejo (migración pendiente)
-            let saboresFormateados = p.sabores;
-            if (typeof p.sabores === 'string' && p.sabores.includes(',')) {
-                saboresFormateados = p.sabores.split(',').map(s => s.trim());
-            }
-            return { ...p, sabores: saboresFormateados };
+            // Cargar imágenes extra
+            let imagenesExtra = [];
+            try {
+                const resImagenes = await db.query('SELECT url_imagen FROM producto_imagenes WHERE producto_id = $1 ORDER BY orden', [p.id]);
+                imagenesExtra = resImagenes.rows.map(r => r.url_imagen);
+            } catch(e) { /* Si la tabla no existe aún, no rompe */ }
+
+            // Cargar reseñas
+            let resenas = [];
+            try {
+                const resResenas = await db.query('SELECT nombre_cliente, calificacion, comentario, fecha FROM resenas WHERE producto_id = $1 ORDER BY fecha DESC', [p.id]);
+                resenas = resResenas.rows;
+            } catch(e) { /* Si la tabla no existe aún, no rompe */ }
+
+            return { 
+                ...p, 
+                sabores: saboresConStock, 
+                stock: stockTotal > 0 ? stockTotal : p.stock,
+                imagenesExtra,
+                resenas
+            };
         }));
 
         res.json(productos);
@@ -33,7 +58,7 @@ exports.obtenerTodos = async (req, res) => {
 };
 
 exports.crearProducto = async (req, res) => {
-    const { nombre, descripcion, precio, categoria, imagen, sabores, stock } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra } = req.body;
     try {
         // Preparar string de sabores para la columna legacy
         let stringSabores = '';
@@ -69,6 +94,18 @@ exports.crearProducto = async (req, res) => {
             }
         }
 
+        // Insertar imágenes extra
+        if (Array.isArray(imagenesExtra) && imagenesExtra.length > 0) {
+            for (let i = 0; i < imagenesExtra.length; i++) {
+                if (imagenesExtra[i] && imagenesExtra[i].trim()) {
+                    await db.query(
+                        'INSERT INTO producto_imagenes (producto_id, url_imagen, orden) VALUES ($1, $2, $3)',
+                        [productoId, imagenesExtra[i].trim(), i]
+                    );
+                }
+            }
+        }
+
         res.status(201).json({ mensaje: 'Vape registrado en Postgres', id: productoId });
     } catch (error) {
         res.status(500).json({ error: 'Error al registrar el producto.', detalle: error.message });
@@ -77,7 +114,7 @@ exports.crearProducto = async (req, res) => {
 
 exports.editarProducto = async (req, res) => {
     const { id } = req.params;
-    const { nombre, descripcion, precio, categoria, imagen, sabores, stock } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra } = req.body;
     try {
         // Preparar string de sabores para la columna legacy
         let stringSabores = '';
@@ -108,6 +145,19 @@ exports.editarProducto = async (req, res) => {
                     await db.query(
                         'INSERT INTO producto_sabores (producto_id, nombre, stock) VALUES ($1, $2, $3)',
                         [id, nombreSabor.trim(), stockSabor]
+                    );
+                }
+            }
+        }
+
+        // Reemplazar imágenes extra
+        if (Array.isArray(imagenesExtra)) {
+            await db.query('DELETE FROM producto_imagenes WHERE producto_id = $1', [id]);
+            for (let i = 0; i < imagenesExtra.length; i++) {
+                if (imagenesExtra[i] && imagenesExtra[i].trim()) {
+                    await db.query(
+                        'INSERT INTO producto_imagenes (producto_id, url_imagen, orden) VALUES ($1, $2, $3)',
+                        [id, imagenesExtra[i].trim(), i]
                     );
                 }
             }

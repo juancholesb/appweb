@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control - CBflow tech</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -74,9 +75,10 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <input type="url" id="prod-img" placeholder="URL de la imagen" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                <input type="text" id="prod-img-extras" placeholder="URLs extra separadas por coma (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-[11px]">
                 
                 <!-- SABORES CON STOCK INDIVIDUAL -->
                 <div class="border-t border-zinc-800 pt-3">
@@ -92,6 +94,25 @@
             </form>
         </section>
     </main>
+
+    <!-- PANEL DE ANALÍTICAS -->
+    <section class="max-w-7xl mx-auto space-y-6 mb-12">
+        <h2 class="text-2xl font-black text-white border-b border-zinc-800 pb-2">📈 Dashboard de Ventas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col justify-center items-center text-center">
+                <span class="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Ingresos Totales</span>
+                <span id="stat-ventas" class="text-4xl font-black text-emerald-400 font-mono">$0</span>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl flex flex-col justify-center items-center text-center">
+                <span class="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2">Pedidos Confirmados</span>
+                <span id="stat-pedidos" class="text-4xl font-black text-cyan-400 font-mono">0</span>
+            </div>
+            <div class="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl">
+                <span class="text-zinc-400 text-xs font-bold uppercase tracking-widest mb-2 block text-center">Top 5 Sabores</span>
+                <div class="relative h-32 w-full"><canvas id="chartSabores"></canvas></div>
+            </div>
+        </div>
+    </section>
 
     <!-- TABLAS DE CONTROL -->
     <section class="max-w-7xl mx-auto space-y-8">
@@ -203,6 +224,31 @@
                     <button onclick="eliminarItem('categorias', '${c.id}')" class="text-red-400 font-bold px-1 cursor-pointer hover:text-red-300">✕</button>
                 </div>
             `).join('');
+
+            // Cargar Analíticas
+            try {
+                const resStats = await fetch('/api/admin/estadisticas');
+                if (resStats.ok) {
+                    const stats = await resStats.json();
+                    document.getElementById("stat-ventas").innerText = '$' + Number(stats.ventasTotales).toLocaleString('es-CO');
+                    document.getElementById("stat-pedidos").innerText = stats.totalPedidos;
+                    
+                    if (window.chartSaboresInstance) window.chartSaboresInstance.destroy();
+                    const ctx = document.getElementById('chartSabores').getContext('2d');
+                    window.chartSaboresInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: stats.saboresMasVendidos.map(s => s.nombre),
+                            datasets: [{
+                                data: stats.saboresMasVendidos.map(s => s.cantidad),
+                                backgroundColor: ['#06b6d4', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                    });
+                }
+            } catch(e) { console.error('Error cargando analíticas', e); }
 
             // Banners Carrusel
             const resPromo = await fetch('/api/promociones');
@@ -329,6 +375,7 @@
             document.getElementById("prod-cat").value = prod.categoria;
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
+            document.getElementById("prod-img-extras").value = (prod.imagenesExtra || []).join(',');
 
             // Re-armar caja de sabores con stock real desde la BD
             contenedorSabores.innerHTML = "";
@@ -431,13 +478,17 @@
                 }
             });
 
+            const stringExtras = document.getElementById("prod-img-extras").value;
+            const imagenesExtra = stringExtras ? stringExtras.split(',').map(s => s.trim()).filter(s => s) : [];
+
             const data = {
                 nombre: document.getElementById("prod-nombre").value,
                 categoria: document.getElementById("prod-cat").value,
                 precio: document.getElementById("prod-precio").value,
                 descripcion: document.getElementById("prod-desc").value,
                 imagen: document.getElementById("prod-img").value,
-                sabores: arraySabores
+                sabores: arraySabores,
+                imagenesExtra: imagenesExtra
                 // Stock total se calcula automáticamente en el backend
             };
 

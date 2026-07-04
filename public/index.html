@@ -74,34 +74,68 @@
         ::-webkit-scrollbar-thumb { background: rgba(161,161,170,0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(161,161,170,0.5); }
     </style>
+    <script>
+        // Inicializar tema antes de renderizar para evitar flash
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                document.getElementById('theme-icon').innerText = '🌙';
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                document.getElementById('theme-icon').innerText = '☀️';
+            }
+        }
+    </script>
 </head>
-<body class="bg-black text-white antialiased">
+<body class="bg-zinc-100 dark:bg-black text-zinc-900 dark:text-white antialiased transition-colors duration-300">
 
-    <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y CARRITO (Puro Negro) ─── -->
-    <div class="bg-black py-4 px-6 border-b border-zinc-900">
-        <div class="container mx-auto flex justify-between items-center">
+    <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y BUSCADOR ─── -->
+    <div class="bg-white dark:bg-black py-4 px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
+        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <a href="#" class="flex items-center gap-2 sm:gap-3">
                 <img src="img/logo.png" alt="Logo CBflow tech" class="h-6 sm:h-8 w-auto object-contain rounded-sm">
-                <span class="text-xl sm:text-2xl font-light tracking-wide text-white">
+                <span class="text-xl sm:text-2xl font-light tracking-wide text-zinc-900 dark:text-white">
                     CBFLOW <span class="font-extrabold text-cyan-400 text-lg sm:text-xl tracking-tight">TECH</span>
                 </span>
             </a>
-            <div class="flex items-center text-sm">
+            <div class="flex items-center gap-3 text-sm w-full md:w-auto mt-3 md:mt-0">
+                <!-- 🌙 TOGGLE TEMA -->
+                <button onclick="toggleTheme()" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-lg hover:border-cyan-500/50 transition-colors shadow-sm cursor-pointer" aria-label="Cambiar tema">
+                    <span id="theme-icon" class="leading-none">☀️</span>
+                </button>
+                <script>document.getElementById('theme-icon').innerText = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';</script>
+
+                <!-- 🔍 BUSCADOR EN VIVO -->
+                <div class="relative w-full md:w-64 group">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span class="text-zinc-500 group-focus-within:text-cyan-500 dark:group-focus-within:text-cyan-400 transition-colors">🔍</span>
+                    </div>
+                    <input type="text" id="buscador-vapes" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..." 
+                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 focus:bg-white dark:focus:bg-zinc-800 transition-all shadow-inner placeholder-zinc-500">
+                </div>
+
                 <!-- 🛒 BOTÓN DEL HEADER -->
-                <button onclick="abrirCarrito()" id="btn-carrito" class="flex items-center gap-2 text-zinc-300 hover:text-cyan-400 transition font-medium cursor-pointer bg-transparent border-none outline-none">
-                    <span id="header-carrito-total" class="text-zinc-400 font-mono">$0</span>
-                    <span class="text-xl">🛒</span>
-                    <span id="header-badge-carrito" class="bg-cyan-500 text-black text-xs font-black px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(6,182,212,0.4)]">0</span>
+                <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-3 py-1.5 rounded-full shadow-sm">
+                    <span id="header-carrito-total" class="text-zinc-600 dark:text-zinc-400 font-mono hidden sm:inline-block">$0</span>
+                    <span class="text-lg">🛒</span>
+                    <span id="header-badge-carrito" class="bg-cyan-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(6,182,212,0.4)]">0</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ─── SECCIÓN 2: BANNER DE ANUNCIO ROTATIVO ─── -->
-    <div class="bg-zinc-950 py-2 border-b border-zinc-900 text-center">
-        <p class="text-xs font-bold tracking-wider text-zinc-200 uppercase">
-            CBflow tech ® La marca #1 de tecnología y vaporizadores en Riohacha
-        </p>
+    <!-- ─── SECCIÓN 2: BANNER DE ANUNCIO ROTATIVO (MARQUEE) ─── -->
+    <div class="bg-zinc-200 dark:bg-zinc-950 py-2 border-b border-zinc-300 dark:border-zinc-900 text-center overflow-hidden flex items-center h-8 transition-colors duration-300">
+        <marquee behavior="scroll" direction="left" scrollamount="4" class="text-[11px] font-bold tracking-widest text-zinc-700 dark:text-zinc-300 uppercase whitespace-nowrap">
+            ⚡ ENVÍOS EN RIOHACHA CONTRA ENTREGA ⚡ <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥 <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> ⚡ ENVÍOS EN RIOHACHA CONTRA ENTREGA ⚡ <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥
+        </marquee>
     </div>
 
     <!-- ─── SECCIÓN 3: CARRUSEL DINÁMICO DE NOVEDADES (PREMIUM) ─── -->
@@ -117,15 +151,15 @@
     </main>
 
     <!-- ─── SECCIÓN 4: NAV DE CATEGORÍAS AUTOMÁTICA ─── -->
-    <nav class="bg-zinc-900/90 backdrop-blur-md py-4 px-6 sticky top-0 z-50 shadow-md border-y border-zinc-800/50">
+    <nav class="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md py-4 px-6 sticky top-[80px] md:top-[88px] z-50 shadow-md border-y border-zinc-200 dark:border-zinc-800/50 transition-colors duration-300">
         <div class="container mx-auto flex justify-center items-center text-sm">
-            <div id="menu-categorias" class="flex flex-wrap items-center justify-center gap-3 sm:gap-8 text-zinc-400 font-medium text-xs sm:text-sm"></div>
+            <div id="menu-categorias" class="flex flex-wrap items-center justify-center gap-3 sm:gap-8 text-zinc-500 dark:text-zinc-400 font-medium text-xs sm:text-sm"></div>
         </div>
     </nav>
 
-    <!-- ─── SECCIÓN 5: CATÁLOGO DE PRODUCTOS ─── -->
-    <section id="productos" class="container mx-auto px-4 my-12 max-w-6xl scroll-mt-24">
-        <h3 class="text-xl font-bold tracking-tight text-zinc-300 border-b border-zinc-800 pb-3 mb-8 flex items-center gap-2">
+    <!-- ─── SECCIÓN 5: GRID DE PRODUCTOS EN VIVO ─── -->
+    <section class="container mx-auto px-6 py-12 min-h-screen">
+        <h3 class="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-300 border-b border-zinc-300 dark:border-zinc-800 pb-3 mb-8 flex items-center gap-2 transition-colors duration-300">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Catálogo Disponible
         </h3>
         <div id="contenedor-productos" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">

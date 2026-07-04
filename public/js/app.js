@@ -230,6 +230,38 @@ window.filtrarPorCategoria = function(categoria) {
     }
 };
 
+window.filtrarPorBusqueda = function(termino) {
+    if (!termino || termino.trim() === '') {
+        // Restaurar estado según la categoría activa
+        const catActiva = document.querySelector('.cat-btn.text-cyan-400');
+        if (catActiva) {
+            filtrarPorCategoria(catActiva.dataset.cat);
+        } else {
+            renderizarProductos(cacheProductosTienda);
+        }
+        return;
+    }
+    
+    const busqueda = termino.toLowerCase().trim();
+    const filtrados = cacheProductosTienda.filter(p => {
+        const enNombre = p.nombre.toLowerCase().includes(busqueda);
+        const enDesc = (p.descripcion || '').toLowerCase().includes(busqueda);
+        const enSabores = Array.isArray(p.sabores) 
+            ? p.sabores.some(s => (s.nombre || s).toLowerCase().includes(busqueda))
+            : String(p.sabores || '').toLowerCase().includes(busqueda);
+        return enNombre || enDesc || enSabores;
+    });
+    
+    // Si queremos que también respete la categoría actual:
+    const catActiva = document.querySelector('.cat-btn.text-cyan-400');
+    let resultadosFinales = filtrados;
+    if (catActiva && catActiva.dataset.cat !== 'todas') {
+        resultadosFinales = filtrados.filter(p => p.categoria === catActiva.dataset.cat);
+    }
+
+    renderizarProductos(resultadosFinales);
+};
+
 // =========================================================================
 // 💾 DATOS DE RESPALDO (Por si el servidor está apagado)
 // =========================================================================
@@ -380,6 +412,68 @@ window.abrirDetalleProducto = function(id) {
     const agotado = stockTotal === 0;
     const primerSaborDisponible = saboresParsed.find(s => s.stock !== 0);
 
+    // 📸 GALERÍA MÚLTIPLE
+    const todasLasImagenes = [prod.imagen, ...(prod.imagenesExtra || [])].filter(img => img);
+    let galeriaHtml = '';
+    if (todasLasImagenes.length > 1) {
+        galeriaHtml = `
+            <div class="flex gap-2 mt-4 overflow-x-auto pb-2 px-4 justify-center">
+                ${todasLasImagenes.map((img, idx) => `
+                    <button type="button" onclick="cambiarImagenModal('${img}', this)" class="modal-thumb flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 ${idx === 0 ? 'border-cyan-400' : 'border-zinc-800'} hover:border-cyan-400 transition-colors bg-zinc-900 cursor-pointer">
+                        <img src="${img}" class="w-full h-full object-contain" alt="Thumbnail">
+                    </button>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    // ⭐ SISTEMA DE RESEÑAS
+    let resenasHtml = '';
+    const resenas = prod.resenas || [];
+    const promedio = resenas.length > 0 ? (resenas.reduce((sum, r) => sum + r.calificacion, 0) / resenas.length).toFixed(1) : 'Nuevo';
+
+    resenasHtml = `
+        <div class="mt-8 border-t border-zinc-800/60 pt-6">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-white font-bold flex items-center gap-2">⭐ Opiniones</h4>
+                <span class="text-cyan-400 text-xs font-bold bg-cyan-500/10 px-2 py-1 rounded-md border border-cyan-500/20">${promedio} / 5.0 (${resenas.length})</span>
+            </div>
+            
+            <div class="space-y-3 max-h-40 overflow-y-auto pr-2 mb-5 custom-scrollbar">
+                ${resenas.length === 0 ? '<p class="text-xs text-zinc-500 italic text-center py-4 bg-zinc-950/50 rounded-xl">Sé el primero en opinar sobre este producto.</p>' : 
+                    resenas.map(r => `
+                        <div class="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-zinc-300">${r.nombre_cliente}</span>
+                                <span class="text-amber-400 text-[10px] drop-shadow-[0_0_5px_rgba(251,191,36,0.3)]">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
+                            </div>
+                            <p class="text-[11px] text-zinc-400 italic">"${r.comentario}"</p>
+                            <span class="text-[9px] text-zinc-600 block mt-2 font-mono">${new Date(r.fecha).toLocaleDateString()}</span>
+                        </div>
+                    `).join('')
+                }
+            </div>
+
+            <div class="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50">
+                <h5 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-3">Deja tu opinión</h5>
+                <form onsubmit="enviarResena(event, ${prod.id})" class="space-y-2.5">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="resena-nombre" placeholder="Tu Nombre" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 focus:bg-zinc-800 transition-colors" required>
+                        <select id="resena-estrellas" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 cursor-pointer focus:bg-zinc-800 transition-colors">
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="1">⭐</option>
+                        </select>
+                    </div>
+                    <textarea id="resena-comentario" placeholder="¿Qué tal el sabor y la calidad?" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 h-14 resize-none focus:bg-zinc-800 transition-colors" required></textarea>
+                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500/20 to-cyan-400/20 hover:from-cyan-500/40 hover:to-cyan-400/40 text-cyan-400 font-bold text-[10px] border border-cyan-500/30 uppercase tracking-wider py-2.5 rounded-lg transition-all cursor-pointer">Publicar Reseña</button>
+                </form>
+            </div>
+        </div>
+    `;
+
     // Generar chips de sabores
     let saboresHtml = "";
     if (saboresParsed.length > 0) {
@@ -438,20 +532,23 @@ window.abrirDetalleProducto = function(id) {
         <button onclick="cerrarDetalleProducto()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
         
         <div class="grid grid-cols-1 md:grid-cols-2">
-            <!-- Imagen con efecto premium -->
-            <div class="relative p-8 flex items-center justify-center min-h-[280px] overflow-hidden bg-zinc-950">
-                <!-- Resplandor difuso del producto -->
-                <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-purple-500/5"></div>
-                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-cyan-500/10 rounded-full blur-[60px]"></div>
-                <!-- Patrón decorativo -->
-                <div class="absolute top-4 left-4 w-16 h-16 border border-cyan-500/10 rounded-full"></div>
-                <div class="absolute bottom-4 right-4 w-8 h-8 border border-cyan-500/10 rounded-full"></div>
-                <!-- Imagen -->
-                <img src="${prod.imagen}" class="max-h-64 object-contain relative z-10 drop-shadow-[0_20px_40px_rgba(6,182,212,0.2)] hover:scale-105 transition-transform duration-500" alt="${prod.nombre}">
+            <!-- Imagen con efecto premium y galería -->
+            <div class="flex flex-col bg-zinc-950 relative overflow-hidden">
+                <div class="relative p-8 flex items-center justify-center flex-1 min-h-[220px] md:min-h-[280px]">
+                    <!-- Resplandor difuso del producto -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-purple-500/5 pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none"></div>
+                    <!-- Patrón decorativo -->
+                    <div class="absolute top-4 left-4 w-16 h-16 border border-cyan-500/10 rounded-full pointer-events-none"></div>
+                    <div class="absolute bottom-4 right-4 w-8 h-8 border border-cyan-500/10 rounded-full pointer-events-none"></div>
+                    <!-- Imagen -->
+                    <img id="modal-img-principal" src="${prod.imagen}" class="max-h-56 md:max-h-64 object-contain relative z-10 drop-shadow-[0_20px_40px_rgba(6,182,212,0.2)] hover:scale-105 transition-transform duration-500" alt="${prod.nombre}">
+                </div>
+                ${galeriaHtml}
             </div>
             
             <!-- Info del producto -->
-            <div class="p-6 md:p-8 bg-zinc-900 flex flex-col justify-between">
+            <div class="p-4 md:p-8 bg-zinc-900 flex flex-col justify-between max-h-[70vh] md:max-h-[85vh] overflow-y-auto custom-scrollbar">
                 <div>
                     <!-- Badges -->
                     <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -470,15 +567,17 @@ window.abrirDetalleProducto = function(id) {
                     <div class="mb-4">
                         <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Cantidad</label>
                         <div class="flex items-center gap-1">
-                            <button type="button" onclick="alterarCantidadModal(-1)" class="w-11 h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">−</button>
-                            <input type="number" id="modal-cantidad-input" value="1" min="1" class="w-14 h-11 bg-zinc-950/80 border border-zinc-700/50 text-center text-sm font-mono font-bold text-white rounded-xl outline-none" readonly>
-                            <button type="button" onclick="alterarCantidadModal(1)" class="w-11 h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">+</button>
+                            <button type="button" onclick="alterarCantidadModal(-1)" class="w-10 h-10 md:w-11 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">−</button>
+                            <input type="number" id="modal-cantidad-input" value="1" min="1" class="w-12 h-10 md:w-14 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-center text-sm font-mono font-bold text-white rounded-xl outline-none" readonly>
+                            <button type="button" onclick="alterarCantidadModal(1)" class="w-10 h-10 md:w-11 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">+</button>
                         </div>
                     </div>
+                    
+                    ${resenasHtml}
                 </div>
                 
                 <!-- Subtotal y CTA -->
-                <div class="pt-5 border-t border-zinc-800/60 flex items-center justify-between gap-4 mt-4">
+                <div class="pt-5 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 sticky bottom-0 bg-zinc-900 py-2">
                     <div class="flex flex-col">
                         <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Subtotal</span>
                         <span id="modal-precio-total" class="text-2xl font-black text-white font-mono" data-base-price="${prod.precio}">$${Number(prod.precio).toLocaleString('es-CO')}</span>
@@ -496,6 +595,72 @@ window.abrirDetalleProducto = function(id) {
     modal.classList.remove("hidden");
     modal.style.display = "flex";
     setTimeout(() => modal.classList.remove("opacity-0"), 20);
+};
+
+// Cambiar imagen principal del modal
+window.cambiarImagenModal = function(url, btnElement) {
+    const imgPrincipal = document.getElementById("modal-img-principal");
+    if (imgPrincipal) {
+        imgPrincipal.style.opacity = "0.5";
+        setTimeout(() => {
+            imgPrincipal.src = url;
+            imgPrincipal.style.opacity = "1";
+        }, 150);
+    }
+    
+    // Actualizar bordes
+    document.querySelectorAll('.modal-thumb').forEach(btn => {
+        btn.classList.replace('border-cyan-400', 'border-zinc-800');
+    });
+    if (btnElement) {
+        btnElement.classList.replace('border-zinc-800', 'border-cyan-400');
+    }
+};
+
+// Enviar Reseña a la API
+window.enviarResena = async function(event, productoId) {
+    event.preventDefault();
+    const btnSubmit = event.target.querySelector('button[type="submit"]');
+    const originalText = btnSubmit.innerText;
+    btnSubmit.innerText = "Enviando...";
+    btnSubmit.disabled = true;
+
+    const data = {
+        producto_id: productoId,
+        nombre_cliente: document.getElementById("resena-nombre").value,
+        calificacion: Number(document.getElementById("resena-estrellas").value),
+        comentario: document.getElementById("resena-comentario").value
+    };
+
+    try {
+        const res = await fetch('/api/resenas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (res.ok) {
+            btnSubmit.innerText = "¡Enviada! ✅";
+            btnSubmit.classList.replace("text-cyan-400", "text-emerald-400");
+            btnSubmit.classList.replace("border-cyan-500/30", "border-emerald-500/30");
+            
+            // Recargar datos en caché (o al menos recargar la página/modal)
+            setTimeout(async () => {
+                const resProd = await fetch('/api/productos');
+                cacheProductosTienda = await resProd.json();
+                renderizarProductos(cacheProductosTienda);
+                abrirDetalleProducto(productoId); // Refresca el modal para mostrar la nueva reseña
+            }, 1000);
+        } else {
+            alert("❌ Hubo un error al publicar tu opinión.");
+            btnSubmit.innerText = originalText;
+            btnSubmit.disabled = false;
+        }
+    } catch (e) {
+        alert("❌ Error de conexión.");
+        btnSubmit.innerText = originalText;
+        btnSubmit.disabled = false;
+    }
 };
 
 // Seleccionar sabor en modal (chips)
