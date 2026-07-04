@@ -46,6 +46,16 @@ function obtenerStockTotal(sabores) {
     return parsed.reduce((sum, s) => sum + s.stock, 0);
 }
 
+window.obtenerMaxStockPara = function(id, sabor) {
+    const lista = window.obtenerListaProductosGlobal ? window.obtenerListaProductosGlobal() : [];
+    const prod = lista.find(p => Number(p.id) === Number(id));
+    if (!prod) return -1;
+    const sabores = parsearSabores(prod.sabores);
+    const saborBuscado = (sabor || "Original").trim().toLowerCase();
+    const objSabor = sabores.find(s => s.nombre.trim().toLowerCase() === saborBuscado);
+    return objSabor ? objSabor.stock : -1;
+};
+
 // =========================================================================
 // 🚀 2. INICIALIZADOR AUTOMÁTICO (Conectado al Servidor / Fallback Local)
 // =========================================================================
@@ -505,6 +515,7 @@ window.abrirDetalleProducto = function(id) {
                     }).join('')}
                 </div>
                 <input type="hidden" id="modal-sabor-select" value="${primerSaborDisponible ? primerSaborDisponible.nombre : (saboresParsed[0]?.nombre || 'Original')}">
+                <input type="hidden" id="modal-producto-id" value="${prod.id}">
             </div>
         `;
     } else {
@@ -514,6 +525,7 @@ window.abrirDetalleProducto = function(id) {
                 Sabor original estándar listo para envío.
             </p>
             <input type="hidden" id="modal-sabor-select" value="Original">
+            <input type="hidden" id="modal-producto-id" value="${prod.id}">
         `;
     }
 
@@ -681,11 +693,31 @@ window.seleccionarSaborModal = function(sabor) {
 window.alterarCantidadModal = function(cambio) {
     const input = document.getElementById("modal-cantidad-input");
     const precioTotalSpan = document.getElementById("modal-precio-total");
+    const idInput = document.getElementById("modal-producto-id");
+    const saborInput = document.getElementById("modal-sabor-select");
     if (!input || !precioTotalSpan) return;
 
     const precioBase = Number(precioTotalSpan.getAttribute("data-base-price"));
     let valorActual = Number(input.value) + cambio;
     if (valorActual < 1) valorActual = 1;
+
+    if (idInput && saborInput) {
+        const id = idInput.value;
+        const sabor = saborInput.value;
+        const maxStock = window.obtenerMaxStockPara(id, sabor);
+        
+        // Sumar lo que ya hay en el carrito
+        const itemEnCarrito = carrito.find(p => p.id == id && p.sabor.toLowerCase() === sabor.toLowerCase());
+        const cantEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+        
+        if (maxStock !== -1 && (valorActual + cantEnCarrito) > maxStock) {
+            valorActual = maxStock - cantEnCarrito;
+            if (valorActual < 1) valorActual = 1;
+            if (cambio > 0) {
+                alert(`¡Solo hay ${maxStock} unidades disponibles de este sabor!`);
+            }
+        }
+    }
     
     input.value = valorActual;
     precioTotalSpan.innerText = "$" + (precioBase * valorActual).toLocaleString('es-CO');
@@ -718,6 +750,13 @@ window.agregarAlCarritoDesdeVitrina = function(id) {
         item.sabor.trim().toLowerCase() === saborElegido.trim().toLowerCase()
     );
 
+    const maxStock = window.obtenerMaxStockPara(id, saborElegido);
+    const cantEnCarrito = existeEnCarrito ? existeEnCarrito.cantidad : 0;
+    
+    if (maxStock !== -1 && (cantEnCarrito + 1) > maxStock) {
+        return alert(`¡Solo hay ${maxStock} unidades disponibles de este sabor!`);
+    }
+
     if (existeEnCarrito) {
         existeEnCarrito.cantidad += 1;
     } else {
@@ -749,6 +788,13 @@ window.agregarAlCarritoDesdeModal = function(id, event) {
         Number(item.id) === Number(id) && 
         item.sabor.trim().toLowerCase() === saborElegido.trim().toLowerCase()
     );
+
+    const maxStock = window.obtenerMaxStockPara(id, saborElegido);
+    const cantEnCarrito = existeEnCarrito ? existeEnCarrito.cantidad : 0;
+
+    if (maxStock !== -1 && (cantEnCarrito + cantidad) > maxStock) {
+        return alert(`¡Solo hay ${maxStock} unidades disponibles de este sabor! ${cantEnCarrito > 0 ? '(Ya tienes ' + cantEnCarrito + ' en el carrito)' : ''}`);
+    }
 
     if (existeEnCarrito) {
         existeEnCarrito.cantidad += cantidad;
@@ -873,6 +919,13 @@ window.cambiarCantidad = function(id, sabor, cambio) {
         String(p.sabor || '').trim().toLowerCase() === sabBuscado
     );
     if (!item) return;
+
+    if (cambio > 0) {
+        const maxStock = window.obtenerMaxStockPara(id, sabor);
+        if (maxStock !== -1 && (item.cantidad + cambio) > maxStock) {
+            return alert(`¡Stock máximo alcanzado! Solo hay ${maxStock} unidades.`);
+        }
+    }
 
     item.cantidad += cambio;
 
