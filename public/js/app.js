@@ -971,10 +971,11 @@ window.actualizarMetodosPago = function() {
     
     if (ubicacion === "Riohacha") {
         metodoEntregaSelect.classList.remove("hidden");
+        metodoEntregaSelect.style.display = "block";
         // Asegurarse de que el toggleDireccion se ejecute
         toggleDireccion();
     } else {
-        metodoEntregaSelect.classList.add("hidden");
+        metodoEntregaSelect.style.display = "none";
         metodoEntregaSelect.value = "envio";
         document.getElementById("contenedor-direccion-barrio").style.display = "block";
 
