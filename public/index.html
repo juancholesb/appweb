@@ -113,37 +113,6 @@
         }
         /* ─── MÓVIL: Header compacto ─── */
         @media (max-width: 767px) {
-            .header-row-mobile {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                gap: 10px;
-            }
-            .header-row-mobile > a {
-                display: flex;
-                align-items: center;
-                gap: 7px;
-                min-width: 0;
-                flex: 1;
-                padding-right: 6px;
-            }
-            .header-row-mobile > a img {
-                height: 2rem;
-                width: auto;
-                flex-shrink: 0;
-            }
-            .header-row-mobile > a span:last-child {
-                white-space: nowrap;
-                font-size: 0.95rem;
-            }
-            .header-row-mobile #btn-carrito {
-                margin-left: auto;
-                align-self: center;
-                flex-shrink: 0;
-                padding: 0.55rem 0.7rem;
-                border-radius: 999px;
-            }
             .buscador-mobile {
                 margin-top: 8px;
                 width: 100%;
@@ -191,39 +160,35 @@
     <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y BUSCADOR ─── -->
     <div class="bg-white dark:bg-black py-3 px-4 md:py-4 md:px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
         <div class="container mx-auto">
-            <!-- Fila 1: Logo + Carrito (siempre en una línea) -->
-            <div class="header-row-mobile">
-                <a href="#" class="flex items-center gap-2">
+            <div class="flex flex-col gap-3 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-4">
+                <a href="#" class="flex items-center gap-2 min-w-0">
                     <img src="img/logo.png" alt="Logo CBflow tech" class="h-7 w-auto object-contain rounded-sm">
-                    <span class="text-lg sm:text-2xl font-light tracking-wide text-zinc-900 dark:text-white">
+                    <span class="text-lg sm:text-2xl font-light tracking-wide text-zinc-900 dark:text-white whitespace-nowrap">
                         CBFLOW <span class="font-extrabold text-cyan-400 tracking-tight">TECH</span>
                     </span>
                 </a>
-                <!-- 🛒 BOTÓN DEL HEADER -->
-                <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-2.5 py-2 sm:px-3 sm:py-1.5 rounded-full shadow-sm ml-auto hover:shadow-md active:scale-[0.98]">
+                <div class="hidden md:flex justify-center w-full">
+                    <div class="relative w-full max-w-xl group">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <span class="text-zinc-500 group-focus-within:text-cyan-400 transition-colors">🔍</span>
+                        </div>
+                        <input type="text" id="buscador-vapes" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..."
+                            class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 focus:bg-white dark:focus:bg-zinc-800 transition-all shadow-inner placeholder-zinc-500">
+                    </div>
+                </div>
+                <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-2.5 py-2 sm:px-3 sm:py-1.5 rounded-full shadow-sm hover:shadow-md active:scale-[0.98]">
                     <span id="header-carrito-total" class="text-zinc-600 dark:text-zinc-400 font-mono hidden sm:inline-block">$0</span>
                     <span class="text-lg">🛒</span>
                     <span id="header-badge-carrito" class="bg-cyan-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(6,182,212,0.4)]">0</span>
                 </button>
             </div>
-            <!-- Fila 2: Buscador (ancho completo en móvil) -->
-            <div class="buscador-mobile md:hidden">
+            <div class="buscador-mobile md:hidden mt-3">
                 <div class="relative w-full group">
                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <span class="text-zinc-500">🔍</span>
                     </div>
                     <input type="text" id="buscador-vapes-mobile" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..."
-                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 transition-all shadow-inner placeholder-zinc-500">
-                </div>
-            </div>
-            <!-- Buscador escritorio -->
-            <div class="hidden md:flex items-center gap-3 text-sm w-auto mt-0 absolute right-6 top-1/2 -translate-y-1/2">
-                <div class="relative w-64 group">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span class="text-zinc-500 group-focus-within:text-cyan-400 transition-colors">🔍</span>
-                    </div>
-                    <input type="text" id="buscador-vapes" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..."
-                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 focus:bg-white dark:focus:bg-zinc-800 transition-all shadow-inner placeholder-zinc-500">
+                        class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 transition-all shadow-inner placeholder-zinc-500">
                 </div>
             </div>
         </div>
