@@ -1143,7 +1143,7 @@ window.enviarPedidoWhatsApp = async function() {
         console.warn('No se pudo registrar el pedido en la DB:', e);
     }
 
-    const urlValidada = `https://wa.me/${NUMERO_WHATSAPP}?text=${encodeURIComponent(mensaje)}`;
+    const urlValidada = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensaje)}`;
     window.open(urlValidada, '_blank');
 };
 
