@@ -115,11 +115,34 @@
         @media (max-width: 767px) {
             .header-row-mobile {
                 display: flex;
-                flex-direction: row;
-                justify-content: space-between;
                 align-items: center;
+                justify-content: space-between;
                 width: 100%;
-                gap: 0;
+                gap: 10px;
+            }
+            .header-row-mobile > a {
+                display: flex;
+                align-items: center;
+                gap: 7px;
+                min-width: 0;
+                flex: 1;
+                padding-right: 6px;
+            }
+            .header-row-mobile > a img {
+                height: 2rem;
+                width: auto;
+                flex-shrink: 0;
+            }
+            .header-row-mobile > a span:last-child {
+                white-space: nowrap;
+                font-size: 0.95rem;
+            }
+            .header-row-mobile #btn-carrito {
+                margin-left: auto;
+                align-self: center;
+                flex-shrink: 0;
+                padding: 0.55rem 0.7rem;
+                border-radius: 999px;
             }
             .buscador-mobile {
                 margin-top: 8px;
@@ -177,7 +200,7 @@
                     </span>
                 </a>
                 <!-- 🛒 BOTÓN DEL HEADER -->
-                <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-3 py-1.5 rounded-full shadow-sm">
+                <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-2.5 py-2 sm:px-3 sm:py-1.5 rounded-full shadow-sm ml-auto hover:shadow-md active:scale-[0.98]">
                     <span id="header-carrito-total" class="text-zinc-600 dark:text-zinc-400 font-mono hidden sm:inline-block">$0</span>
                     <span class="text-lg">🛒</span>
                     <span id="header-badge-carrito" class="bg-cyan-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(6,182,212,0.4)]">0</span>
