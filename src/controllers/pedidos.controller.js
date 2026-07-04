@@ -30,7 +30,7 @@ exports.crearPedido = async (req, res) => {
             cliente_direccion || '',
             ubicacion || '',
             metodo_pago || '',
-            items,  // Pasar el array directamente, pg lo serializa automáticamente
+            JSON.stringify(items),  // Serializar a JSON string para JSONB en PostgreSQL
             total || 0,
             metodo_entrega || 'envio'
         ]);
