@@ -122,7 +122,10 @@
         <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-md font-bold text-zinc-300">📦 Pedidos Recibidos</h3>
-                <button onclick="actualizarTodo()" class="text-xs text-zinc-400 hover:text-cyan-400 border border-zinc-700 px-3 py-1 rounded-lg cursor-pointer transition">🔄 Actualizar</button>
+                <div class="space-x-2">
+                    <button onclick="exportarPedidosCSV()" class="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-900/50 hover:border-emerald-500 bg-emerald-950/20 px-3 py-1 rounded-lg cursor-pointer transition">⬇️ Exportar CSV</button>
+                    <button onclick="actualizarTodo()" class="text-xs text-zinc-400 hover:text-cyan-400 border border-zinc-700 px-3 py-1 rounded-lg cursor-pointer transition">🔄 Actualizar</button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -189,6 +192,12 @@
         // Memoria temporal local
         let cacheProductos = [];
         let cachePromos = [];
+        let cachePedidos = [];
+        
+        // Polling de pedidos
+        let totalPedidosPendientesAnterior = 0;
+        let primeraCargaPedidos = true;
+        const audioNotificacion = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
         
         // IDs de control para saber si estamos editando
         let editProductoId = null;
@@ -312,6 +321,7 @@
                 console.log('📦 Fetch pedidos status:', resPed.status);
                 if (resPed.ok) {
                     const pedidos = await resPed.json();
+                    cachePedidos = pedidos;
                     console.log('📦 Pedidos recibidos:', pedidos);
                     document.getElementById("tabla-pedidos").innerHTML = pedidos.length === 0
                         ? `<tr><td colspan="8" class="text-center py-6 text-zinc-500 text-xs italic">No hay pedidos aún.</td></tr>`
@@ -578,6 +588,70 @@
             }
             return respuesta;
         };
+
+        // EXPORTAR PEDIDOS A CSV
+        window.exportarPedidosCSV = function() {
+            if (cachePedidos.length === 0) {
+                alert("No hay pedidos para exportar.");
+                return;
+            }
+            let csvContent = "data:text/csv;charset=utf-8,ID,Cliente,Entrega,Items,Total,Estado,Fecha\n";
+            cachePedidos.forEach(p => {
+                let itemsStr = "";
+                try {
+                    let items = typeof p.items === 'string' ? JSON.parse(p.items) : p.items;
+                    itemsStr = items.map(i => `${i.cantidad}x ${i.nombre} (${i.sabor||''})`).join(' | ');
+                } catch(e) {}
+                
+                const clean = (str) => String(str || '').replace(/,/g, '').replace(/\n/g, ' ');
+                const row = [
+                    p.id, 
+                    clean(p.cliente_nombre), 
+                    clean(p.metodo_entrega === 'recogida_local' ? 'Local' : 'Envio: ' + p.cliente_direccion),
+                    clean(itemsStr),
+                    p.total,
+                    p.estado,
+                    new Date(p.fecha).toLocaleString('es-CO')
+                ].join(',');
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `pedidos_cbflow_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // POLLING Y NOTIFICACIONES
+        async function revisarNuevosPedidos() {
+            try {
+                const res = await fetch('/api/pedidos', { credentials: 'include' });
+                if(res.ok) {
+                    const pedidos = await res.json();
+                    const pendientesActuales = pedidos.filter(p => p.estado === 'pendiente').length;
+                    
+                    if (!primeraCargaPedidos && pendientesActuales > totalPedidosPendientesAnterior) {
+                        // Reproducir sonido
+                        audioNotificacion.play().catch(e => console.log('El navegador bloqueó autoplay', e));
+                        document.title = `(${pendientesActuales}) Nuevo Pedido - CBFlow`;
+                        // Refrescar tabla visualmente
+                        actualizarTodo();
+                    } else if (pendientesActuales === 0) {
+                        document.title = "Panel de Control - CBflow tech";
+                    } else {
+                        document.title = `(${pendientesActuales}) Pedidos - CBFlow`;
+                    }
+                    totalPedidosPendientesAnterior = pendientesActuales;
+                    primeraCargaPedidos = false;
+                }
+            } catch(e) {}
+        }
+        
+        setInterval(revisarNuevosPedidos, 15000);
+        // Llamada inicial
+        revisarNuevosPedidos();
 
         actualizarTodo();
     </script>
