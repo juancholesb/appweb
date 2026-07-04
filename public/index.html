@@ -77,6 +77,31 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* ─── Forzar oscuridad en formularios y elementos (sin romper Tailwind) ─── */
+        input, textarea, select {
+            background-color: #18181b !important;
+            color: #f5f5f5 !important;
+            border-color: #39393f !important;
+        }
+        input::placeholder, textarea::placeholder {
+            color: #71717a !important;
+        }
+        input:focus, textarea:focus, select:focus {
+            background-color: #27272a !important;
+            border-color: #06b6d4 !important;
+        }
+        /* Prevenir que autocomplete blanco sobrescriba */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #18181b inset !important;
+            box-shadow: 0 0 0 30px #18181b inset !important;
+        }
+        input:-webkit-autofill {
+            -webkit-text-fill-color: #f5f5f5 !important;
+        }
+
         /* ─── Scrollbar personalizado ─── */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
