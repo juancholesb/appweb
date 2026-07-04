@@ -545,6 +545,7 @@ window.abrirDetalleProducto = function(id) {
         }
     }
 
+    const esMobile = window.innerWidth < 768;
     contenido.innerHTML = `
         <!-- Botón cerrar -->
         <button onclick="cerrarDetalleProducto()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
@@ -566,7 +567,7 @@ window.abrirDetalleProducto = function(id) {
             </div>
             
             <!-- Info del producto -->
-            <div class="p-4 md:p-8 bg-zinc-900 flex flex-col justify-between max-h-[70vh] md:max-h-[85vh] overflow-y-auto custom-scrollbar">
+            <div class="p-4 md:p-8 bg-zinc-900 flex flex-col justify-between max-h-[70vh] md:max-h-[85vh] overflow-y-auto custom-scrollbar mobile-modal-content">
                 <div>
                     <!-- Badges -->
                     <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -612,6 +613,9 @@ window.abrirDetalleProducto = function(id) {
     // Mostrar modal con animación
     modal.classList.remove("hidden");
     modal.style.display = "flex";
+    modal.classList.toggle("mobile-sheet", window.innerWidth < 768);
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     setTimeout(() => modal.classList.remove("opacity-0"), 20);
 };
 
@@ -732,12 +736,15 @@ window.alterarCantidadModal = function(cambio) {
 window.cerrarDetalleProducto = function() {
     const modal = document.getElementById("modal-detalle");
     if(modal) {
+        modal.classList.remove("mobile-sheet");
         modal.classList.add("opacity-0");
         setTimeout(() => {
             modal.classList.add("hidden");
             modal.style.display = "";
         }, 300);
     }
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
 };
 
 // =========================================================================
