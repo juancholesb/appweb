@@ -337,8 +337,15 @@
                                 <td class="py-3 px-4 text-right space-x-2">${acciones}</td>
                             </tr>`;
                         }).join('');
+                } else {
+                    const errorData = await resPed.json().catch(() => ({}));
+                    console.error('Error cargando pedidos:', resPed.status, errorData);
+                    document.getElementById("tabla-pedidos").innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-500 text-xs">Error ${resPed.status}: ${errorData.error || 'No se pudieron cargar pedidos'}</td></tr>`;
                 }
-            } catch(e) { console.warn('No se pudieron cargar pedidos', e); }
+            } catch(e) { 
+                console.error('Excepción al cargar pedidos:', e);
+                document.getElementById("tabla-pedidos").innerHTML = `<tr><td colspan="8" class="text-center py-6 text-red-500 text-xs">Error: ${e.message}</td></tr>`;
+            }
         }
 
         // ACCIONES DE CARGA PARA EDICIÓN
