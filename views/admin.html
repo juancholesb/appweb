@@ -308,7 +308,7 @@
 
             // Pedidos
             try {
-                const resPed = await fetch('/api/pedidos');
+                const resPed = await fetch('/api/pedidos', { credentials: 'include' });
                 if (resPed.ok) {
                     const pedidos = await resPed.json();
                     document.getElementById("tabla-pedidos").innerHTML = pedidos.length === 0
@@ -398,7 +398,7 @@
         // CONFIRMAR / CANCELAR PEDIDOS
         window.confirmarPedido = async function(id) {
             if (!confirm('¿Confirmar este pedido y descontar el stock?')) return;
-            const res = await fetch(`/api/pedidos/${id}/confirmar`, { method: 'POST' });
+            const res = await fetch(`/api/pedidos/${id}/confirmar`, { method: 'POST', credentials: 'include' });
             const data = await res.json();
             alert(res.ok ? '✅ ' + data.mensaje : '❌ ' + (data.error || 'Error'));
             // Notificar a la tienda que actualice el stock
@@ -408,7 +408,7 @@
 
         window.cancelarPedido = async function(id) {
             if (!confirm('¿Cancelar este pedido?')) return;
-            const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'POST' });
+            const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'POST', credentials: 'include' });
             await actualizarTodo();
         };
 
