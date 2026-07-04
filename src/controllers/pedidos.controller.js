@@ -30,7 +30,7 @@ exports.crearPedido = async (req, res) => {
             cliente_direccion || '',
             ubicacion || '',
             metodo_pago || '',
-            JSON.stringify(items),
+            items,  // Pasar el array directamente, pg lo serializa automáticamente
             total || 0,
             metodo_entrega || 'envio'
         ]);
