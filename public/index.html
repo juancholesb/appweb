@@ -73,9 +73,76 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(161,161,170,0.3); border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(161,161,170,0.5); }
+
+        /* ─── ⚽ EFECTO MUNDIAL 2026 ─── */
+        @keyframes balonCaer {
+            0%   { transform: translateY(-80px) rotate(0deg);   opacity: 0; }
+            10%  { opacity: 0.18; }
+            90%  { opacity: 0.12; }
+            100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes balonFlotar {
+            0%   { transform: translateY(0px) rotate(0deg) scale(1); }
+            50%  { transform: translateY(-18px) rotate(180deg) scale(1.05); }
+            100% { transform: translateY(0px) rotate(360deg) scale(1); }
+        }
+        #mundial-balones-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .balon-mundial {
+            position: absolute;
+            top: -80px;
+            font-size: 1.6rem;
+            animation: balonCaer linear infinite;
+            user-select: none;
+            will-change: transform;
+        }
+        /* Badge flotante Mundial */
+        #badge-mundial {
+            position: fixed;
+            bottom: 22px;
+            left: 16px;
+            z-index: 9999;
+            pointer-events: none;
+            animation: balonFlotar 3s ease-in-out infinite;
+        }
     </style>
 </head>
 <body class="bg-zinc-100 dark:bg-black text-zinc-900 dark:text-white antialiased transition-colors duration-300">
+
+    <!-- ⚽ BALONES CAYENDO MUNDIAL 2026 (decoración, no bloquea nada) -->
+    <div id="mundial-balones-bg" aria-hidden="true"></div>
+    <script>
+        (function() {
+            const container = document.getElementById('mundial-balones-bg');
+            const emojis = ['⚽','🏆','⚽','🥅','⚽','🏆','⚽'];
+            const count = 14;
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('span');
+                el.className = 'balon-mundial';
+                el.textContent = emojis[i % emojis.length];
+                el.style.left = (Math.random() * 100) + '%';
+                el.style.animationDuration = (12 + Math.random() * 20) + 's';
+                el.style.animationDelay = (Math.random() * 18) + 's';
+                el.style.fontSize = (1.1 + Math.random() * 1.2) + 'rem';
+                el.style.opacity = (0.06 + Math.random() * 0.10);
+                container.appendChild(el);
+            }
+        })();
+    </script>
+
+    <!-- 🏆 BADGE FLOTANTE MUNDIAL -->
+    <div id="badge-mundial" aria-hidden="true">
+        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); border: 1px solid rgba(250,204,21,0.35); border-radius: 14px; padding: 7px 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(250,204,21,0.12);">
+            <span style="font-size: 1.3rem; line-height: 1;">🏆</span>
+            <span style="font-size: 9px; font-weight: 900; color: #fbbf24; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2;">Mundial</span>
+            <span style="font-size: 8px; font-weight: 700; color: rgba(251,191,36,0.7); letter-spacing: 0.05em;">2026</span>
+        </div>
+    </div>
 
     <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y BUSCADOR ─── -->
     <div class="bg-white dark:bg-black py-4 px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
@@ -106,10 +173,10 @@
         </div>
     </div>
 
-    <!-- ─── SECCIÓN 2: BANNER DE ANUNCIO ROTATIVO (MARQUEE) ─── -->
-    <div class="bg-zinc-200 dark:bg-zinc-950 py-2 border-b border-zinc-300 dark:border-zinc-900 text-center overflow-hidden flex items-center h-8 transition-colors duration-300">
-        <marquee behavior="scroll" direction="left" scrollamount="4" class="text-[11px] font-bold tracking-widest text-zinc-700 dark:text-zinc-300 uppercase whitespace-nowrap">
-            ⚡ ENVÍOS EN RIOHACHA CONTRA ENTREGA ⚡ <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥 <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> ⚡ ENVÍOS EN RIOHACHA CONTRA ENTREGA ⚡ <span class="mx-8 text-zinc-400 dark:text-zinc-700">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥
+    <!-- ─── SECCIÓN 2: BANNER MUNDIAL ROTATIVO ─── -->
+    <div class="py-2 border-b border-zinc-900 text-center overflow-hidden flex items-center h-8" style="background: linear-gradient(90deg, #0a0a0a 0%, #0f1c0a 40%, #0a0a0a 100%)">
+        <marquee behavior="scroll" direction="left" scrollamount="5" class="text-[11px] font-bold tracking-widest uppercase whitespace-nowrap" style="color: #fbbf24;">
+            🏆 MUNDIAL 2026 EN VIVO &nbsp;⚽&nbsp; VAPE &amp; DISFRUTA EL PARTIDO <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🇨🇴 COLOMBIA AL MUNDIAL &nbsp;⚽&nbsp; PIDE TU VAPE ANTES DEL PARTIDO <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🏆 ENVÍOS EN RIOHACHA CONTRA ENTREGA &nbsp;⚽&nbsp; MUNDIAL 2026 USA 🇺🇸 MEX 🇲🇽 CAN 🇨🇦 <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥
         </marquee>
     </div>
 
