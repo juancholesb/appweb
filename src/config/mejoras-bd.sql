@@ -25,3 +25,7 @@ CREATE TABLE IF NOT EXISTS resenas (
     comentario TEXT,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Añadir columna de método de entrega a pedidos si no existe
+ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS metodo_entrega VARCHAR(50) DEFAULT 'envio';
+

@@ -14,7 +14,7 @@ exports.obtenerTodos = async (req, res) => {
 
 // Crear pedido (público - lo llama la tienda al enviar por WhatsApp)
 exports.crearPedido = async (req, res) => {
-    const { cliente_nombre, cliente_direccion, ubicacion, metodo_pago, items, total } = req.body;
+    const { cliente_nombre, cliente_direccion, ubicacion, metodo_pago, items, total, metodo_entrega } = req.body;
 
     if (!cliente_nombre || !items || items.length === 0) {
         return res.status(400).json({ error: 'Faltan datos del pedido.' });
@@ -22,8 +22,8 @@ exports.crearPedido = async (req, res) => {
 
     try {
         const resultado = await db.query(`
-            INSERT INTO pedidos (cliente_nombre, cliente_direccion, ubicacion, metodo_pago, items, total, estado)
-            VALUES ($1, $2, $3, $4, $5, $6, 'pendiente')
+            INSERT INTO pedidos (cliente_nombre, cliente_direccion, ubicacion, metodo_pago, items, total, metodo_entrega, estado)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendiente')
             RETURNING id
         `, [
             cliente_nombre,
@@ -31,7 +31,8 @@ exports.crearPedido = async (req, res) => {
             ubicacion || '',
             metodo_pago || '',
             JSON.stringify(items),
-            total || 0
+            total || 0,
+            metodo_entrega || 'envio'
         ]);
 
         res.status(201).json({ mensaje: 'Pedido registrado.', id: resultado.rows[0].id });

@@ -130,7 +130,7 @@
                         <tr class="border-b border-zinc-800 text-zinc-500 text-xs uppercase">
                             <th class="py-2 px-4">#</th>
                             <th class="py-2 px-4">Cliente</th>
-                            <th class="py-2 px-4">Dirección</th>
+                            <th class="py-2 px-4">Entrega</th>
                             <th class="py-2 px-4">Items</th>
                             <th class="py-2 px-4">Total</th>
                             <th class="py-2 px-4">Estado</th>
@@ -324,11 +324,12 @@
                                 <button onclick="confirmarPedido(${p.id})" class="text-green-400 hover:text-green-300 text-xs bg-green-950/30 border border-green-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✅ Confirmar</button>
                                 <button onclick="cancelarPedido(${p.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 border border-red-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✕ Cancelar</button>
                             ` : `<span class="text-zinc-600 text-xs italic">${p.estado}</span>`;
+                            const entrega = p.metodo_entrega === 'recogida_local' ? '🏪 Local' : '🛵 Envío: ' + (p.cliente_direccion || '-');
                             return `
                             <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
                                 <td class="py-3 px-4 text-zinc-500 font-mono text-xs">#${p.id}</td>
                                 <td class="py-3 px-4 font-bold text-white text-xs">${p.cliente_nombre}</td>
-                                <td class="py-3 px-4 text-zinc-400 text-xs">${p.cliente_direccion || '-'}</td>
+                                <td class="py-3 px-4 text-zinc-400 text-xs">${entrega}</td>
                                 <td class="py-3 px-4 text-zinc-300 text-xs max-w-[200px] truncate" title="${resumenItems}">${resumenItems}</td>
                                 <td class="py-3 px-4 text-cyan-400 font-mono text-xs">$${Number(p.total).toLocaleString('es-CO')}</td>
                                 <td class="py-3 px-4"><span class="text-[10px] font-bold px-2 py-0.5 rounded border ${estadoColor}">${p.estado}</span></td>

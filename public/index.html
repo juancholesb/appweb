@@ -249,14 +249,21 @@
         <div class="p-5 border-t border-zinc-800 bg-zinc-900/80">
             <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">Datos de Envío</h3>
             <div class="space-y-2 mb-4">
-                <input type="text" id="checkout-nombre" placeholder="Tu Nombre Completo" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-white p-2.5 rounded-xl outline-none focus:border-cyan-500" required>
-                <input type="text" id="checkout-direccion" placeholder="Dirección / Barrio" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-white p-2.5 rounded-xl outline-none focus:border-cyan-500" required>
-                
-                <select id="checkout-ubicacion" onchange="actualizarMetodosPago()" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 p-2.5 rounded-xl outline-none focus:border-cyan-500 cursor-pointer">
-                    <option value="">¿Dónde te encuentras?</option>
-                    <option value="Riohacha">Riohacha, La Guajira</option>
-                    <option value="Nacional">Otra ciudad de Colombia</option>
+                <select id="checkout-metodo-entrega" onchange="toggleDireccion()" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-white p-2.5 rounded-xl outline-none focus:border-cyan-500 cursor-pointer mb-2">
+                    <option value="envio">🛵 Envío a Domicilio</option>
+                    <option value="recogida_local">🏪 Recoger en Tienda (Local)</option>
                 </select>
+                <input type="text" id="checkout-nombre" placeholder="Tu Nombre Completo" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-white p-2.5 rounded-xl outline-none focus:border-cyan-500" required>
+                
+                <div id="contenedor-direccion" class="space-y-2">
+                    <input type="text" id="checkout-direccion" placeholder="Dirección / Barrio" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-white p-2.5 rounded-xl outline-none focus:border-cyan-500">
+                    
+                    <select id="checkout-ubicacion" onchange="actualizarMetodosPago()" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 p-2.5 rounded-xl outline-none focus:border-cyan-500 cursor-pointer">
+                        <option value="">¿Dónde te encuentras?</option>
+                        <option value="Riohacha">Riohacha, La Guajira</option>
+                        <option value="Nacional">Otra ciudad de Colombia</option>
+                    </select>
+                </div>
 
                 <select id="checkout-pago" class="w-full bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 p-2.5 rounded-xl outline-none focus:border-cyan-500 cursor-pointer disabled:opacity-50" disabled>
                     <option value="">Selecciona la ubicación primero...</option>

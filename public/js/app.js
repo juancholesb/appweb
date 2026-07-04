@@ -941,6 +941,24 @@ window.cerrarCarrito = function() {
 // =========================================================================
 // 🚚 7. INTELIGENCIA DE ENVÍOS Y EMBUDO WHATSAPP
 // =========================================================================
+window.toggleDireccion = function() {
+    const metodo = document.getElementById("checkout-metodo-entrega").value;
+    const contDir = document.getElementById("contenedor-direccion");
+    const pagoSelect = document.getElementById("checkout-pago");
+    
+    if (metodo === "recogida_local") {
+        contDir.style.display = "none";
+        pagoSelect.innerHTML = `
+            <option value="Contra Entrega (Efectivo)">💵 Efectivo al recoger</option>
+            <option value="Transferencia / Nequi">📱 Transferencia (Bancolombia / Nequi)</option>
+        `;
+        pagoSelect.disabled = false;
+    } else {
+        contDir.style.display = "block";
+        window.actualizarMetodosPago();
+    }
+};
+
 window.actualizarMetodosPago = function() {
     const ubicacion = document.getElementById("checkout-ubicacion").value;
     const selectPago = document.getElementById("checkout-pago");
@@ -968,21 +986,25 @@ window.actualizarMetodosPago = function() {
 window.enviarPedidoWhatsApp = async function() {
     if (carrito.length === 0) return alert("Tu carrito está vacío.");
     
+    const metodoEntrega = document.getElementById("checkout-metodo-entrega").value;
     const nombre = document.getElementById("checkout-nombre").value.trim();
     const direccion = document.getElementById("checkout-direccion").value.trim();
     const ubicacion = document.getElementById("checkout-ubicacion").value;
     const pago = document.getElementById("checkout-pago").value;
 
-    if (!nombre || !direccion || !ubicacion || !pago) {
-        return alert("Por favor completa tus datos de envío antes de continuar con la compra.");
+    if (!nombre || !pago || (metodoEntrega === "envio" && (!direccion || !ubicacion))) {
+        return alert("Por favor completa tus datos antes de continuar con la compra.");
     }
 
     let totalTotal = 0;
     let mensaje = `*🚀 NUEVO PEDIDO - CBFLOW TECH*\n`;
     mensaje += `---------------------------\n`;
     mensaje += `👤 *Cliente:* ${nombre}\n`;
-    mensaje += `📍 *Ubicación:* ${ubicacion === "Riohacha" ? "Riohacha (Local)" : "Envío Nacional (Colombia)"}\n`;
-    mensaje += `🏠 *Dirección:* ${direccion}\n`;
+    mensaje += `📦 *Método:* ${metodoEntrega === "recogida_local" ? "🏪 Recoger en Tienda" : "🛵 Envío a Domicilio"}\n`;
+    if (metodoEntrega === "envio") {
+        mensaje += `📍 *Ubicación:* ${ubicacion === "Riohacha" ? "Riohacha (Local)" : "Envío Nacional (Colombia)"}\n`;
+        mensaje += `🏠 *Dirección:* ${direccion}\n`;
+    }
     mensaje += `💳 *Método de Pago:* ${pago}\n`;
     mensaje += `---------------------------\n`;
     mensaje += `*🛒 DETALLE DE COMPRA:*\n\n`;
@@ -1012,6 +1034,7 @@ window.enviarPedidoWhatsApp = async function() {
                 cliente_direccion: direccion,
                 ubicacion,
                 metodo_pago: pago,
+                metodo_entrega: metodoEntrega,
                 items: carrito.map(item => ({
                     id: item.id,
                     nombre: item.nombre,
