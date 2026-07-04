@@ -77,8 +77,8 @@
         /* ─── ⚽ EFECTO MUNDIAL 2026 ─── */
         @keyframes balonCaer {
             0%   { transform: translateY(-80px) rotate(0deg);   opacity: 0; }
-            10%  { opacity: 0.18; }
-            90%  { opacity: 0.12; }
+            10%  { opacity: 1; }
+            90%  { opacity: 0.7; }
             100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
         }
         @keyframes balonFlotar {
@@ -90,7 +90,7 @@
             position: fixed;
             inset: 0;
             pointer-events: none;
-            z-index: 0;
+            z-index: 55;  /* Por delante del contenido pero detrás del header sticky (z-60) */
             overflow: hidden;
         }
         .balon-mundial {
@@ -100,6 +100,7 @@
             animation: balonCaer linear infinite;
             user-select: none;
             will-change: transform;
+            opacity: 0.22;
         }
         /* Badge flotante Mundial */
         #badge-mundial {
@@ -109,6 +110,24 @@
             z-index: 9999;
             pointer-events: none;
             animation: balonFlotar 3s ease-in-out infinite;
+        }
+        /* ─── MÓVIL: Header compacto ─── */
+        @media (max-width: 767px) {
+            .header-row-mobile {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                gap: 0;
+            }
+            .buscador-mobile {
+                margin-top: 8px;
+                width: 100%;
+            }
+            .balon-mundial {
+                opacity: 0.15; /* Más suave en móvil */
+            }
         }
     </style>
 </head>
@@ -120,16 +139,18 @@
         (function() {
             const container = document.getElementById('mundial-balones-bg');
             const emojis = ['⚽','🏆','⚽','🥅','⚽','🏆','⚽'];
-            const count = 14;
+            // En móvil menos balones para no afectar el rendimiento
+            const esMobile = window.innerWidth < 768;
+            const count = esMobile ? 6 : 14;
             for (let i = 0; i < count; i++) {
                 const el = document.createElement('span');
                 el.className = 'balon-mundial';
                 el.textContent = emojis[i % emojis.length];
                 el.style.left = (Math.random() * 100) + '%';
-                el.style.animationDuration = (12 + Math.random() * 20) + 's';
+                // Más lentos en móvil
+                el.style.animationDuration = (esMobile ? 20 : 12) + (Math.random() * 20) + 's';
                 el.style.animationDelay = (Math.random() * 18) + 's';
-                el.style.fontSize = (1.1 + Math.random() * 1.2) + 'rem';
-                el.style.opacity = (0.06 + Math.random() * 0.10);
+                el.style.fontSize = (esMobile ? 1.0 : 1.1) + (Math.random() * 1.2) + 'rem';
                 container.appendChild(el);
             }
         })();
@@ -145,30 +166,42 @@
     </div>
 
     <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y BUSCADOR ─── -->
-    <div class="bg-white dark:bg-black py-4 px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
-        <div class="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-            <a href="#" class="flex items-center gap-2 sm:gap-3">
-                <img src="img/logo.png" alt="Logo CBflow tech" class="h-6 sm:h-8 w-auto object-contain rounded-sm">
-                <span class="text-xl sm:text-2xl font-light tracking-wide text-zinc-900 dark:text-white">
-                    CBFLOW <span class="font-extrabold text-cyan-400 text-lg sm:text-xl tracking-tight">TECH</span>
-                </span>
-            </a>
-            <div class="flex items-center gap-3 text-sm w-full md:w-auto mt-3 md:mt-0">
-                <!-- 🔍 BUSCADOR EN VIVO -->
-                <div class="relative w-full md:w-64 group">
-                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <span class="text-zinc-500 group-focus-within:text-cyan-500 dark:group-focus-within:text-cyan-400 transition-colors">🔍</span>
-                    </div>
-                    <input type="text" id="buscador-vapes" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..." 
-                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 focus:bg-white dark:focus:bg-zinc-800 transition-all shadow-inner placeholder-zinc-500">
-                </div>
-
+    <div class="bg-white dark:bg-black py-3 px-4 md:py-4 md:px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
+        <div class="container mx-auto">
+            <!-- Fila 1: Logo + Carrito (siempre en una línea) -->
+            <div class="header-row-mobile">
+                <a href="#" class="flex items-center gap-2">
+                    <img src="img/logo.png" alt="Logo CBflow tech" class="h-7 w-auto object-contain rounded-sm">
+                    <span class="text-lg sm:text-2xl font-light tracking-wide text-zinc-900 dark:text-white">
+                        CBFLOW <span class="font-extrabold text-cyan-400 tracking-tight">TECH</span>
+                    </span>
+                </a>
                 <!-- 🛒 BOTÓN DEL HEADER -->
                 <button onclick="abrirCarrito()" id="btn-carrito" class="flex-shrink-0 flex items-center gap-2 text-zinc-700 dark:text-zinc-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition font-medium cursor-pointer bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 hover:border-cyan-500/30 px-3 py-1.5 rounded-full shadow-sm">
                     <span id="header-carrito-total" class="text-zinc-600 dark:text-zinc-400 font-mono hidden sm:inline-block">$0</span>
                     <span class="text-lg">🛒</span>
                     <span id="header-badge-carrito" class="bg-cyan-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-[0_0_10px_rgba(6,182,212,0.4)]">0</span>
                 </button>
+            </div>
+            <!-- Fila 2: Buscador (ancho completo en móvil) -->
+            <div class="buscador-mobile md:hidden">
+                <div class="relative w-full group">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span class="text-zinc-500">🔍</span>
+                    </div>
+                    <input type="text" id="buscador-vapes-mobile" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..."
+                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 transition-all shadow-inner placeholder-zinc-500">
+                </div>
+            </div>
+            <!-- Buscador escritorio -->
+            <div class="hidden md:flex items-center gap-3 text-sm w-auto mt-0 absolute right-6 top-1/2 -translate-y-1/2">
+                <div class="relative w-64 group">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <span class="text-zinc-500 group-focus-within:text-cyan-400 transition-colors">🔍</span>
+                    </div>
+                    <input type="text" id="buscador-vapes" oninput="if(typeof window.filtrarPorBusqueda === 'function') window.filtrarPorBusqueda(this.value)" placeholder="Buscar sabores, vapes..."
+                           class="w-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-white text-xs rounded-full pl-9 pr-4 py-2 outline-none focus:border-cyan-500/50 focus:bg-white dark:focus:bg-zinc-800 transition-all shadow-inner placeholder-zinc-500">
+                </div>
             </div>
         </div>
     </div>
@@ -181,15 +214,15 @@
     </div>
 
     <!-- ─── SECCIÓN 3: CARRUSEL DINÁMICO DE NOVEDADES (PREMIUM) ─── -->
-    <main class="container mx-auto px-4 my-8 relative group max-w-6xl">
-        <div id="carrusel-track" class="flex overflow-x-auto scroll-smooth snap-x snap-mandatory rounded-2xl bg-zinc-900 border border-zinc-800/60 shadow-[0_8px_40px_rgba(0,0,0,0.5)] min-h-[300px] md:min-h-[420px] select-none overflow-hidden">
+    <main class="container mx-auto px-4 my-5 md:my-8 relative group max-w-6xl">
+        <div id="carrusel-track" class="flex overflow-x-auto scroll-smooth snap-x snap-mandatory rounded-2xl bg-zinc-900 border border-zinc-800/60 shadow-[0_8px_40px_rgba(0,0,0,0.5)] min-h-[180px] md:min-h-[420px] select-none overflow-hidden">
             <div class="w-full flex-shrink-0 flex items-center justify-center text-zinc-500 animate-pulse">
                 Cargando novedades...
             </div>
         </div>
-        <button id="prev-slide" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❮</button>
-        <button id="next-slide" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❯</button>
-        <div id="carrusel-indicadores" class="flex justify-center gap-3 mt-5"></div>
+        <button id="prev-slide" class="absolute left-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❮</button>
+        <button id="next-slide" class="absolute right-4 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-cyan-500 hover:text-black text-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full backdrop-blur-md transition-all duration-300 opacity-0 group-hover:opacity-100 shadow-xl cursor-pointer border border-zinc-700/50 hover:border-cyan-400 text-lg font-bold">❯</button>
+        <div id="carrusel-indicadores" class="flex justify-center gap-3 mt-4"></div>
     </main>
 
     <!-- ─── SECCIÓN 4: NAV DE CATEGORÍAS AUTOMÁTICA ─── -->
@@ -200,11 +233,11 @@
     </nav>
 
     <!-- ─── SECCIÓN 5: GRID DE PRODUCTOS EN VIVO ─── -->
-    <section class="container mx-auto px-6 py-12 min-h-screen">
-        <h3 class="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-300 border-b border-zinc-300 dark:border-zinc-800 pb-3 mb-8 flex items-center gap-2 transition-colors duration-300">
+    <section class="container mx-auto px-3 md:px-6 py-6 md:py-12 min-h-screen">
+        <h3 class="text-base md:text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-300 border-b border-zinc-300 dark:border-zinc-800 pb-3 mb-6 flex items-center gap-2 transition-colors duration-300">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Catálogo Disponible
         </h3>
-        <div id="contenedor-productos" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div id="contenedor-productos" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-6">
             <!-- Aquí irán las tarjetas de los vapers -->
         </div>
     </section>

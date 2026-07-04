@@ -270,6 +270,12 @@ window.filtrarPorBusqueda = function(termino) {
     }
 
     renderizarProductos(resultadosFinales);
+
+    // Sincronizar el valor entre el input desktop y el mobile
+    const iDesktop = document.getElementById('buscador-vapes');
+    const iMobile  = document.getElementById('buscador-vapes-mobile');
+    if (iDesktop && iDesktop.value !== termino) iDesktop.value = termino;
+    if (iMobile  && iMobile.value  !== termino) iMobile.value  = termino;
 };
 
 // =========================================================================
