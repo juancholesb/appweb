@@ -109,7 +109,6 @@ exports.cancelarPedido = async (req, res) => {
         res.status(500).json({ error: 'Error al cancelar pedido.', detalle: error.message });
     }
 };
-
 // Actualizar estado del pedido (admin)
 exports.actualizarEstado = async (req, res) => {
     const { id } = req.params;
@@ -135,7 +134,6 @@ exports.actualizarEstado = async (req, res) => {
             const items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
 
             for (const item of items) {
-                // Verificar si el producto tiene sabores con stock individual
                 const saboresRes = await db.query(`
                     SELECT id, stock FROM producto_sabores 
                     WHERE producto_id = $1 AND nombre = $2
@@ -143,14 +141,12 @@ exports.actualizarEstado = async (req, res) => {
                 `, [item.id, item.sabor || '']);
 
                 if (saboresRes.rows.length > 0) {
-                    // Descontar del sabor específico
                     await db.query(`
                         UPDATE producto_sabores 
                         SET stock = GREATEST(0, stock - $1)
                         WHERE id = $2
                     `, [item.cantidad, saboresRes.rows[0].id]);
                 } else {
-                    // Si no hay sabores, descontar del stock general del producto
                     await db.query(`
                         UPDATE productos 
                         SET stock = GREATEST(0, stock - $1)
@@ -160,19 +156,24 @@ exports.actualizarEstado = async (req, res) => {
             }
         }
 
-        // Actualizar el estado
+        // Actualizar solo el estado (sin tocar fecha_confirmacion por compatibilidad)
         const resultado = await db.query(`
             UPDATE pedidos 
-            SET estado = $1,
-                fecha_confirmacion = CASE WHEN $1 = 'confirmado' THEN NOW() ELSE fecha_confirmacion END
+            SET estado = $1
             WHERE id = $2 
             RETURNING id, estado
         `, [estado, id]);
 
-        // Notificar a la tienda que recargue el stock
+        // Intentar actualizar fecha_confirmacion si existe la columna (no crítico)
+        if (estado === 'confirmado') {
+            db.query(`UPDATE pedidos SET fecha_confirmacion = NOW() WHERE id = $1`, [id])
+              .catch(() => {}); // Silencioso si la columna no existe aún
+        }
+
         res.json({ mensaje: 'Estado actualizado.', pedido: resultado.rows[0] });
     } catch (error) {
-        res.status(500).json({ error: 'Error al actualizar estado.', detalle: error.message });
+        console.error('Error en actualizarEstado:', error);
+        res.status(500).json({ error: 'Error interno: ' + error.message });
     }
 };
 
