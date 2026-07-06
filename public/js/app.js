@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const prodRef = params.get('producto');
     if (prodRef) {
         // Pequeño delay para que la UI termine de renderizar antes de abrir el modal
-        setTimeout(() => window.abrirModalDetalle(prodRef), 400);
+        setTimeout(() => window.abrirDetalleProducto(prodRef), 400);
     }
 });
 
