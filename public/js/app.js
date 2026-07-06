@@ -107,6 +107,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Inicializar visualmente el carrito guardado
     actualizarInterfazCarrito();
+
+    // 🚀 ABRIR PRODUCTO AUTOMÁTICAMENTE SI VIENE DESDE EL CARRUSEL
+    const params = new URLSearchParams(window.location.search);
+    const prodRef = params.get('producto');
+    if (prodRef) {
+        // Pequeño delay para que la UI termine de renderizar antes de abrir el modal
+        setTimeout(() => window.abrirModalDetalle(prodRef), 400);
+    }
 });
 
 // =========================================================================

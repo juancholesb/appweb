@@ -57,6 +57,9 @@
                     <input type="text" id="p-boton" value="Comprar Ahora" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none">
                     <input type="url" id="p-imagen" placeholder="URL Imagen Banner" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
+                <select id="p-enlace" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer text-xs">
+                    <option value="#productos">Llevar a la sección: Todos los productos</option>
+                </select>
                 <input type="hidden" id="p-fondo" value="from-zinc-900 via-zinc-900 to-cyan-950/40">
                 <button type="submit" id="btn-submit-promo" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer">Publicar en Carrusel</button>
             </form>
@@ -277,6 +280,10 @@
             // Productos - Ahora con sabores que son objetos {nombre, stock}
             const resProd = await fetch('/api/productos');
             cacheProductos = await resProd.json();
+            
+            // Actualizar select de enlaces para promos
+            document.getElementById("p-enlace").innerHTML = '<option value="#productos">Llevar a la sección: Todos los productos</option>' + cacheProductos.map(p => `<option value="?producto=${p.id}">Llevar al producto: ${p.nombre}</option>`).join('');
+            
             document.getElementById("tabla-productos").innerHTML = cacheProductos.map(p => {
                 // Los sabores ahora pueden ser objetos {nombre, stock} o strings legacy
                 let saboresArr = [];
@@ -419,7 +426,8 @@
             document.getElementById("p-desc").value = promo.descripcion;
             document.getElementById("p-boton").value = promo.texto_boton || promo.textoBoton || 'Comprar Ahora';
             document.getElementById("p-imagen").value = promo.imagen;
-            document.getElementById("p-fondo").value = promo.colorFondo;
+            document.getElementById("p-fondo").value = promo.color_fondo || promo.colorFondo || 'from-zinc-900 via-zinc-900 to-cyan-950/40';
+            document.getElementById("p-enlace").value = promo.enlace || '#productos';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -529,7 +537,7 @@
                 textoBoton: document.getElementById("p-boton").value,
                 imagen: document.getElementById("p-imagen").value,
                 colorFondo: document.getElementById("p-fondo").value,
-                enlace: "#productos"
+                enlace: document.getElementById("p-enlace").value || "#productos"
             };
 
             const url = editPromoId ? `/api/promociones/${editPromoId}` : '/api/promociones';
