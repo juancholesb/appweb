@@ -154,12 +154,10 @@ exports.obtenerEstado = async (req, res) => {
         }
 
         const pedido = resultado.rows[0];
-        // Enmascarar el nombre por seguridad (ej: Juan Perez -> J*** P***)
-        const nombreEnmascarado = pedido.cliente_nombre.split(' ').map(palabra => palabra.charAt(0) + '***').join(' ');
 
         res.json({
             id: pedido.id,
-            cliente: nombreEnmascarado,
+            cliente: pedido.cliente_nombre,
             estado: pedido.estado,
             fecha: pedido.fecha,
             total: pedido.total,

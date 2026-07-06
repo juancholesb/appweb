@@ -47,10 +47,9 @@
         <div id="success" class="hidden">
             <div class="border-b border-zinc-800 pb-4 mb-6">
                 <div class="flex justify-between items-center mb-1">
-                    <h2 class="text-xl font-black text-white">Pedido #<span id="pedido-id"></span></h2>
+                    <h2 class="text-xl font-black text-white">Pedido de <span id="pedido-cliente" class="text-emerald-400"></span></h2>
                     <span id="pedido-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/50 text-emerald-400 border border-emerald-900/50"></span>
                 </div>
-                <p class="text-zinc-400 text-sm">A nombre de: <span id="pedido-cliente" class="text-zinc-200 font-bold"></span></p>
                 <p class="text-zinc-500 text-xs mt-1" id="pedido-fecha"></p>
             </div>
 
@@ -140,7 +139,6 @@
             document.getElementById('error').classList.add('hidden');
             document.getElementById('success').classList.remove('hidden');
 
-            document.getElementById('pedido-id').textContent = pedido.id;
             document.getElementById('pedido-cliente').textContent = pedido.cliente;
             document.getElementById('pedido-fecha').textContent = new Date(pedido.fecha).toLocaleString('es-CO');
             document.getElementById('pedido-total').textContent = '$' + Number(pedido.total).toLocaleString('es-CO');
@@ -157,38 +155,53 @@
                 badge.textContent = 'Recibido';
                 badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-950/50 text-amber-400 border border-amber-900/50';
                 setTimeout(() => progressLine.style.width = '0%', 100);
-            } 
+            }
             else if (pedido.estado === 'confirmado') {
                 badge.textContent = 'Confirmado';
                 badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/50 text-emerald-400 border border-emerald-900/50';
-                
+                setTimeout(() => progressLine.style.width = '33%', 100);
+                step2.classList.remove('step-pending'); step2.classList.add('step-active');
+                step2Text.classList.remove('text-zinc-500'); step2Text.classList.add('text-zinc-300');
+            }
+            else if (pedido.estado === 'preparando') {
+                badge.textContent = '📦 Preparando';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-950/50 text-blue-400 border border-blue-900/50';
                 setTimeout(() => progressLine.style.width = '50%', 100);
-                
-                step2.classList.remove('step-pending');
-                step2.classList.add('step-active');
-                step2Text.classList.remove('text-zinc-500');
-                step2Text.classList.add('text-zinc-300');
-                
-                // Si es local, el último paso cambia a "Listo para recoger"
-                if (pedido.entrega === 'recogida_local') {
-                    step3Text.textContent = 'Recoger';
-                }
-            } 
+                step2.classList.remove('step-pending'); step2.classList.add('step-active');
+                step2Text.classList.remove('text-zinc-500'); step2Text.classList.add('text-zinc-300');
+                step2Text.textContent = '¡Preparando!';
+            }
+            else if (pedido.estado === 'en_camino') {
+                badge.textContent = '🚚 En Camino';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-purple-950/50 text-purple-400 border border-purple-900/50';
+                setTimeout(() => progressLine.style.width = '80%', 100);
+                step2.classList.remove('step-pending'); step2.classList.add('step-active');
+                step3.classList.remove('step-pending'); step3.classList.add('step-active');
+                step2Text.classList.remove('text-zinc-500'); step2Text.classList.add('text-zinc-300');
+                step3Text.classList.remove('text-zinc-500'); step3Text.classList.add('text-zinc-300');
+                step3Text.textContent = '¡En Camino!';
+            }
+            else if (pedido.estado === 'entregado') {
+                badge.textContent = '✨ Entregado';
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/50 text-emerald-400 border border-emerald-900/50';
+                setTimeout(() => progressLine.style.width = '100%', 100);
+                step2.classList.remove('step-pending'); step2.classList.add('step-active');
+                step3.classList.remove('step-pending'); step3.classList.add('step-active');
+                step2Text.classList.remove('text-zinc-500'); step2Text.classList.add('text-zinc-300');
+                step3Text.classList.remove('text-zinc-500'); step3Text.classList.add('text-zinc-300');
+                step3Text.textContent = '¡Entregado!';
+            }
             else if (pedido.estado === 'cancelado') {
                 badge.textContent = 'Cancelado';
                 badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-950/50 text-red-400 border border-red-900/50';
-                
                 setTimeout(() => {
                     progressLine.style.width = '100%';
                     progressLine.classList.replace('bg-emerald-500', 'bg-red-500');
                 }, 100);
-                
                 step2.classList.replace('step-pending', 'step-canceled');
                 step3.classList.replace('step-pending', 'step-canceled');
-                
                 step2.innerHTML = '<i class="fa-solid fa-xmark text-xs"></i>';
                 step3.innerHTML = '<i class="fa-solid fa-xmark text-xs"></i>';
-                
                 step2Text.textContent = 'Cancelado';
                 step3Text.textContent = 'Cancelado';
                 step2Text.className = 'text-[10px] font-bold uppercase tracking-wider text-red-500';

@@ -1149,7 +1149,7 @@ window.enviarPedidoWhatsApp = async function() {
         console.warn('No se pudo registrar el pedido en la DB:', e);
     }
 
-    if (pedidoId) {
+    if (pedidoId && metodoEntrega !== 'recogida_local') {
         mensaje += `\n\n📍 *Rastrea tu pedido en tiempo real aquí:*\n`;
         mensaje += `https://cbflow-tech.up.railway.app/pedido.html?id=${pedidoId}`;
     }
