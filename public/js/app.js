@@ -555,8 +555,12 @@ window.abrirDetalleProducto = function(id) {
 
     const esMobile = window.innerWidth < 768;
     contenido.innerHTML = `
-        <!-- Botón cerrar -->
-        <button onclick="cerrarDetalleProducto()" class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
+        <!-- Barra superior sticky con botón cerrar (siempre visible en móvil) -->
+        <div class="close-bar sticky top-0 z-30 flex items-center justify-end px-4 pt-3 pb-1 bg-zinc-900/95 backdrop-blur-sm ${esMobile ? '' : 'hidden'}">
+            <button onclick="cerrarDetalleProducto()" class="w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
+        </div>
+        <!-- Botón cerrar desktop (absolute, solo visible en desktop) -->
+        <button onclick="cerrarDetalleProducto()" class="${esMobile ? 'hidden' : 'absolute top-4 right-4'} w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
         
         <div class="grid grid-cols-1 md:grid-cols-2">
             <!-- Imagen con efecto premium y galería -->
