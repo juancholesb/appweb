@@ -110,6 +110,35 @@ exports.cancelarPedido = async (req, res) => {
     }
 };
 
+// Actualizar estado del pedido (admin)
+exports.actualizarEstado = async (req, res) => {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    const estadosValidos = ['pendiente', 'confirmado', 'preparando', 'en_camino', 'entregado', 'cancelado'];
+    
+    if (!estadosValidos.includes(estado)) {
+        return res.status(400).json({ error: 'Estado no válido.', validos: estadosValidos });
+    }
+
+    try {
+        const resultado = await db.query(`
+            UPDATE pedidos 
+            SET estado = $1 
+            WHERE id = $2 
+            RETURNING id, estado
+        `, [estado, id]);
+
+        if (resultado.rows.length === 0) {
+            return res.status(404).json({ error: 'Pedido no encontrado.' });
+        }
+
+        res.json({ mensaje: 'Estado actualizado.', pedido: resultado.rows[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al actualizar estado.', detalle: error.message });
+    }
+};
+
 // Consultar estado de un pedido (público, datos limitados)
 exports.obtenerEstado = async (req, res) => {
     const { id } = req.params;

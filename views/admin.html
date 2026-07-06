@@ -345,11 +345,36 @@
                                 const fecha = new Date(p.fecha).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
                                 const estadoColor = p.estado === 'confirmado' ? 'text-green-400 bg-green-950/30 border-green-900/40'
                                     : p.estado === 'cancelado' ? 'text-red-400 bg-red-950/30 border-red-900/40'
+                                    : p.estado === 'preparando' ? 'text-blue-400 bg-blue-950/30 border-blue-900/40'
+                                    : p.estado === 'en_camino' ? 'text-purple-400 bg-purple-950/30 border-purple-900/40'
+                                    : p.estado === 'entregado' ? 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40'
                                     : 'text-amber-400 bg-amber-950/30 border-amber-900/40';
-                                const acciones = p.estado === 'pendiente' ? `
-                                    <button onclick="confirmarPedido(${p.id})" class="text-green-400 hover:text-green-300 text-xs bg-green-950/30 border border-green-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✅ Confirmar</button>
-                                    <button onclick="cancelarPedido(${p.id})" class="text-red-400 hover:text-red-300 text-xs bg-red-950/30 border border-red-900/40 px-2.5 py-1 rounded-lg cursor-pointer transition">✕ Cancelar</button>
-                                ` : `<span class="text-zinc-600 text-xs italic">${p.estado}</span>`;
+                                
+                                // Generar opciones de estado disponibles
+                                let botonesEstado = '';
+                                if (p.estado !== 'cancelado') {
+                                    const opcionesEstado = p.estado === 'pendiente' 
+                                        ? ['confirmado', 'cancelado']
+                                        : ['preparando', 'en_camino', 'entregado', 'cancelado'];
+                                    
+                                    const iconosEstado = {
+                                        'pendiente': '⏳',
+                                        'confirmado': '✅',
+                                        'preparando': '📦',
+                                        'en_camino': '🚚',
+                                        'entregado': '✨',
+                                        'cancelado': '✕'
+                                    };
+                                    
+                                    botonesEstado = opcionesEstado.map(estado => {
+                                        const colorBtn = estado === 'cancelado' ? 'text-red-400 hover:text-red-300 bg-red-950/30 border-red-900/40'
+                                            : 'text-cyan-400 hover:text-cyan-300 bg-cyan-950/30 border-cyan-900/40';
+                                        return `<button onclick="cambiarEstadoPedido(${p.id}, '${estado}')" class="text-xs ${colorBtn} border px-2 py-1 rounded-lg cursor-pointer transition">${iconosEstado[estado]} ${estado.replace('_', ' ')}</button>`;
+                                    }).join('');
+                                } else {
+                                    botonesEstado = `<span class="text-zinc-600 text-xs italic">Pedido cancelado</span>`;
+                                }
+                                
                                 const entrega = p.metodo_entrega === 'recogida_local' ? '🏪 Local' : '🛵 Envío: ' + (p.cliente_direccion || '-');
                                 return `
                                 <tr class="border-b border-zinc-800/50 hover:bg-zinc-950/40 transition">
@@ -447,6 +472,27 @@
             if (!confirm('¿Cancelar este pedido?')) return;
             const res = await fetch(`/api/pedidos/${id}/cancelar`, { method: 'POST', credentials: 'include' });
             await actualizarTodo();
+        };
+
+        window.cambiarEstadoPedido = async function(id, estado) {
+            if (!confirm(`¿Cambiar estado del pedido a ${estado.replace('_', ' ')}?`)) return;
+            try {
+                const res = await fetch(`/api/pedidos/${id}/estado`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ estado }),
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('✅ ' + data.mensaje);
+                    await actualizarTodo();
+                } else {
+                    alert('❌ Error: ' + (data.error || 'No se pudo actualizar'));
+                }
+            } catch (error) {
+                alert('❌ Error de red: ' + error.message);
+            }
         };
 
         // CANCELADORES
