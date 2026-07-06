@@ -6,6 +6,9 @@ const { protegerApiAdmin } = require('../middlewares/auth.middleware');
 // Público: la tienda registra el pedido al enviar por WhatsApp
 router.post('/', pedidosController.crearPedido);
 
+// Público: consultar estado de un pedido (sin datos sensibles)
+router.get('/:id/estado', pedidosController.obtenerEstado);
+
 // Admin: ver, confirmar y cancelar pedidos
 router.get('/', protegerApiAdmin, pedidosController.obtenerTodos);
 router.post('/:id/confirmar', protegerApiAdmin, pedidosController.confirmarPedido);

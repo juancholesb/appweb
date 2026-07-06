@@ -109,3 +109,35 @@ exports.cancelarPedido = async (req, res) => {
         res.status(500).json({ error: 'Error al cancelar pedido.', detalle: error.message });
     }
 };
+
+// Consultar estado de un pedido (público, datos limitados)
+exports.obtenerEstado = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const resultado = await db.query(`
+            SELECT id, cliente_nombre, estado, fecha, total, items, metodo_entrega
+            FROM pedidos
+            WHERE id = $1
+        `, [id]);
+
+        if (resultado.rows.length === 0) {
+            return res.status(404).json({ error: 'Pedido no encontrado' });
+        }
+
+        const pedido = resultado.rows[0];
+        // Enmascarar el nombre por seguridad (ej: Juan Perez -> J*** P***)
+        const nombreEnmascarado = pedido.cliente_nombre.split(' ').map(palabra => palabra.charAt(0) + '***').join(' ');
+
+        res.json({
+            id: pedido.id,
+            cliente: nombreEnmascarado,
+            estado: pedido.estado,
+            fecha: pedido.fecha,
+            total: pedido.total,
+            items: pedido.items,
+            entrega: pedido.metodo_entrega
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener estado del pedido', detalle: error.message });
+    }
+};

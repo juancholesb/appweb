@@ -1119,8 +1119,9 @@ window.enviarPedidoWhatsApp = async function() {
     }
 
     // Guardar pedido en la base de datos
+    let pedidoId = null;
     try {
-        await fetch('/api/pedidos', {
+        const response = await fetch('/api/pedidos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1139,12 +1140,30 @@ window.enviarPedidoWhatsApp = async function() {
                 total: totalTotal
             })
         });
+        
+        if (response.ok) {
+            const data = await response.json();
+            pedidoId = data.id;
+        }
     } catch(e) {
         console.warn('No se pudo registrar el pedido en la DB:', e);
     }
 
+    if (pedidoId) {
+        mensaje += `\n\n📍 *Rastrea tu pedido en tiempo real aquí:*\n`;
+        mensaje += `https://cbflow-tech.up.railway.app/pedido.html?id=${pedidoId}`;
+    }
+
     const urlValidada = `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP}&text=${encodeURIComponent(mensaje)}`;
     window.open(urlValidada, '_blank');
+    
+    // Limpiar carrito después de completar el pedido
+    carrito = [];
+    localStorage.removeItem("cbflow_carrito");
+    actualizarInterfazCarrito();
+    cerrarCarrito();
+    
+    alert("¡Pedido enviado! Tu carrito ha sido vaciado. El vendedor se pondrá en contacto pronto.");
 };
 
 // 📡 LISTENER: Detectar cambios de stock desde admin
