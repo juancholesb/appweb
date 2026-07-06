@@ -122,17 +122,54 @@ exports.actualizarEstado = async (req, res) => {
     }
 
     try {
+        // Obtener el pedido actual
+        const pedidoRes = await db.query('SELECT * FROM pedidos WHERE id = $1', [id]);
+        if (pedidoRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Pedido no encontrado.' });
+        }
+
+        const pedido = pedidoRes.rows[0];
+
+        // Si se está confirmando un pedido que estaba pendiente → descontar stock
+        if (estado === 'confirmado' && pedido.estado === 'pendiente') {
+            const items = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
+
+            for (const item of items) {
+                // Verificar si el producto tiene sabores con stock individual
+                const saboresRes = await db.query(`
+                    SELECT id, stock FROM producto_sabores 
+                    WHERE producto_id = $1 AND nombre = $2
+                    LIMIT 1
+                `, [item.id, item.sabor || '']);
+
+                if (saboresRes.rows.length > 0) {
+                    // Descontar del sabor específico
+                    await db.query(`
+                        UPDATE producto_sabores 
+                        SET stock = GREATEST(0, stock - $1)
+                        WHERE id = $2
+                    `, [item.cantidad, saboresRes.rows[0].id]);
+                } else {
+                    // Si no hay sabores, descontar del stock general del producto
+                    await db.query(`
+                        UPDATE productos 
+                        SET stock = GREATEST(0, stock - $1)
+                        WHERE id = $2
+                    `, [item.cantidad, item.id]);
+                }
+            }
+        }
+
+        // Actualizar el estado
         const resultado = await db.query(`
             UPDATE pedidos 
-            SET estado = $1 
+            SET estado = $1,
+                fecha_confirmacion = CASE WHEN $1 = 'confirmado' THEN NOW() ELSE fecha_confirmacion END
             WHERE id = $2 
             RETURNING id, estado
         `, [estado, id]);
 
-        if (resultado.rows.length === 0) {
-            return res.status(404).json({ error: 'Pedido no encontrado.' });
-        }
-
+        // Notificar a la tienda que recargue el stock
         res.json({ mensaje: 'Estado actualizado.', pedido: resultado.rows[0] });
     } catch (error) {
         res.status(500).json({ error: 'Error al actualizar estado.', detalle: error.message });

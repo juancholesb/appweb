@@ -486,6 +486,10 @@
                 const data = await res.json();
                 if (res.ok) {
                     alert('✅ ' + data.mensaje);
+                    // Si se confirmó, notificar a la tienda para que actualice el stock
+                    if (estado === 'confirmado') {
+                        localStorage.setItem('cbflow_refrescar_stock', Date.now().toString());
+                    }
                     await actualizarTodo();
                 } else {
                     alert('❌ Error: ' + (data.error || 'No se pudo actualizar'));
