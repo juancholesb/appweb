@@ -140,7 +140,7 @@ function renderizarCarrusel(promociones) {
                 <h2 class="text-white text-3xl md:text-5xl font-black mb-5 leading-tight animate-slideUp" style="text-shadow: 0 4px 30px rgba(0,0,0,0.8);">${p.titulo || ''}</h2>
                 ${p.descripcion ? `<p class="text-zinc-300/90 text-sm mb-7 max-w-lg mx-auto animate-fadeIn" style="animation-delay: 0.3s;">${p.descripcion}</p>` : ''}
                 ${p.enlace ? `
-                    <a href="${p.enlace}" class="inline-block bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] hover:scale-105 animate-fadeIn" style="animation-delay: 0.5s;">
+                    <a href="${p.enlace}" ${p.enlace.startsWith('?producto=') ? `onclick="event.preventDefault(); window.abrirDetalleProducto('${p.enlace.split('=')[1]}');"` : ''} class="inline-block bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black px-8 py-3.5 rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)] hover:scale-105 animate-fadeIn" style="animation-delay: 0.5s;">
                         ${p.texto_boton || p.textoBoton || 'Ver más'} →
                     </a>` : ''}
             </div>
