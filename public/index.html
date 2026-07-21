@@ -150,238 +150,18 @@
             }
         }
 
-        /* ─── ⚽ EFECTO MUNDIAL 2026 ─── */
-        @keyframes balonCaer {
-            0%   { transform: translateY(-80px) rotate(0deg);   opacity: 0; }
-            10%  { opacity: 1; }
-            90%  { opacity: 0.7; }
-            100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
-        }
-        @keyframes balonFlotar {
-            0%   { transform: translateY(0px) rotate(0deg) scale(1); }
-            50%  { transform: translateY(-18px) rotate(180deg) scale(1.05); }
-            100% { transform: translateY(0px) rotate(360deg) scale(1); }
-        }
-        #mundial-balones-bg {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 55;  /* Por delante del contenido pero detrás del header sticky (z-60) */
-            overflow: hidden;
-        }
-        .balon-mundial {
-            position: absolute;
-            top: -80px;
-            font-size: 1.6rem;
-            animation: balonCaer linear infinite;
-            user-select: none;
-            will-change: transform;
-            opacity: 0.22;
-        }
-        /* Badge flotante Mundial */
-        #badge-mundial {
-            position: fixed;
-            bottom: 22px;
-            left: 16px;
-            z-index: 9999;
-            pointer-events: none;
-            animation: balonFlotar 3s ease-in-out infinite;
-        }
         /* ─── MÓVIL: Header compacto ─── */
         @media (max-width: 767px) {
             .buscador-mobile {
                 margin-top: 8px;
                 width: 100%;
             }
-            .balon-mundial {
-                opacity: 0.15; /* Más suave en móvil */
-            }
         }
     </style>
 </head>
 <body class="bg-zinc-100 dark:bg-black text-zinc-900 dark:text-white antialiased transition-colors duration-300">
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- 🔞 VERIFICACIÓN DE EDAD (solo primera vez) -->
-    <!-- ══════════════════════════════════════════ -->
-    <div id="age-gate" style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        background: linear-gradient(135deg, #000000 0%, #0a0a0f 50%, #050510 100%);
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-        font-family: 'Inter', system-ui, sans-serif;
-    ">
-        <!-- Fondo decorativo -->
-        <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
-            <div style="position:absolute;top:-20%;left:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(6,182,212,0.06) 0%,transparent 70%);border-radius:50%;"></div>
-            <div style="position:absolute;bottom:-20%;right:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(139,92,246,0.06) 0%,transparent 70%);border-radius:50%;"></div>
-        </div>
 
-        <!-- Card -->
-        <div style="
-            background: rgba(9,9,11,0.95);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            padding: 2.5rem 2rem;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 40px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(6,182,212,0.05);
-            position: relative;
-            z-index: 1;
-            animation: ageGateIn 0.5s cubic-bezier(0.16,1,0.3,1) both;
-        ">
-            <!-- Logo -->
-            <div style="margin-bottom:1.5rem;">
-                <img src="img/logo.png" alt="CBflow Tech" style="height:48px;width:auto;object-fit:contain;border-radius:8px;margin:0 auto 0.75rem;display:block;" onerror="this.style.display='none'">
-                <span style="font-size:1.4rem;font-weight:900;letter-spacing:-0.03em;background:linear-gradient(to right,#34d399,#22d3ee);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">CBFLOW TECH</span>
-            </div>
-
-            <!-- Icono -->
-            <div style="width:64px;height:64px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;font-size:1.8rem;">🔞</div>
-
-            <!-- Título -->
-            <h2 style="color:#fff;font-size:1.4rem;font-weight:800;margin:0 0 0.5rem;line-height:1.2;">Verificación de Edad</h2>
-            <p style="color:#71717a;font-size:0.82rem;margin:0 0 1.5rem;line-height:1.6;">
-                Este sitio vende productos de vapeo. El uso de estos productos está <strong style="color:#a1a1aa;">reservado exclusivamente para mayores de 18 años.</strong>
-            </p>
-
-            <!-- Línea divisora -->
-            <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 0 1.5rem;"></div>
-
-            <p style="color:#e4e4e7;font-size:1rem;font-weight:600;margin:0 0 1.25rem;">¿Eres mayor de 18 años?</p>
-
-            <!-- Botones -->
-            <div style="display:flex;flex-direction:column;gap:0.75rem;">
-                <button id="age-gate-yes" onclick="confirmarEdad()" style="
-                    background: linear-gradient(135deg, #06b6d4, #0891b2);
-                    color: #fff;
-                    font-weight: 700;
-                    font-size: 0.95rem;
-                    border: none;
-                    border-radius: 12px;
-                    padding: 0.9rem 1.5rem;
-                    cursor: pointer;
-                    width: 100%;
-                    letter-spacing: 0.01em;
-                    box-shadow: 0 4px 20px rgba(6,182,212,0.25);
-                    transition: transform 0.15s ease, box-shadow 0.15s ease;
-                " onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 28px rgba(6,182,212,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(6,182,212,0.25)'">
-                    ✅ Sí, soy mayor de 18 años
-                </button>
-
-                <button id="age-gate-no" onclick="rechazarEdad()" style="
-                    background: transparent;
-                    color: #71717a;
-                    font-weight: 500;
-                    font-size: 0.85rem;
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 12px;
-                    padding: 0.75rem 1.5rem;
-                    cursor: pointer;
-                    width: 100%;
-                    transition: border-color 0.15s, color 0.15s;
-                " onmouseover="this.style.borderColor='rgba(239,68,68,0.3)';this.style.color='#f87171'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='#71717a'">
-                    No, soy menor de 18 años
-                </button>
-            </div>
-
-            <!-- Nota legal -->
-            <p style="color:#3f3f46;font-size:0.7rem;margin:1.25rem 0 0;line-height:1.5;">
-                Al ingresar confirmas que tienes 18 años o más y aceptas nuestros términos de uso.
-            </p>
-        </div>
-    </div>
-
-    <!-- Mensaje de rechazo -->
-    <div id="age-gate-blocked" style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 99999;
-        background: #000;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        text-align: center;
-        padding: 2rem;
-        font-family: 'Inter', system-ui, sans-serif;
-    ">
-        <div style="font-size:3rem;margin-bottom:1rem;">🚫</div>
-        <h2 style="color:#fff;font-size:1.3rem;font-weight:800;margin:0 0 0.5rem;">Acceso Restringido</h2>
-        <p style="color:#71717a;font-size:0.85rem;max-width:300px;line-height:1.6;">Debes ser mayor de 18 años para ingresar a este sitio.</p>
-    </div>
-
-    <style>
-        @keyframes ageGateIn {
-            from { opacity: 0; transform: scale(0.92) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-    </style>
-
-    <script>
-        // Verificación de edad — solo muestra el modal si no fue confirmado antes
-        (function() {
-            const verificado = localStorage.getItem('cbflow_edad_ok');
-            if (!verificado) {
-                const gate = document.getElementById('age-gate');
-                gate.style.display = 'flex';
-                // Bloquear scroll mientras aparece el modal
-                document.body.style.overflow = 'hidden';
-            }
-        })();
-
-        function confirmarEdad() {
-            localStorage.setItem('cbflow_edad_ok', '1');
-            const gate = document.getElementById('age-gate');
-            gate.style.opacity = '0';
-            gate.style.transition = 'opacity 0.4s ease';
-            document.body.style.overflow = '';
-            setTimeout(() => gate.style.display = 'none', 400);
-        }
-
-        function rechazarEdad() {
-            document.getElementById('age-gate').style.display = 'none';
-            const blocked = document.getElementById('age-gate-blocked');
-            blocked.style.display = 'flex';
-        }
-    </script>
-
-    <!-- ⚽ BALONES CAYENDO MUNDIAL 2026 (decoración, no bloquea nada) -->
-    <div id="mundial-balones-bg" aria-hidden="true"></div>
-    <script>
-        (function() {
-            const container = document.getElementById('mundial-balones-bg');
-            const emojis = ['⚽','🏆','⚽','🥅','⚽','🏆','⚽'];
-            // En móvil menos balones para no afectar el rendimiento
-            const esMobile = window.innerWidth < 768;
-            const count = esMobile ? 6 : 14;
-            for (let i = 0; i < count; i++) {
-                const el = document.createElement('span');
-                el.className = 'balon-mundial';
-                el.textContent = emojis[i % emojis.length];
-                el.style.left = (Math.random() * 100) + '%';
-                // Más lentos en móvil
-                el.style.animationDuration = (esMobile ? 20 : 12) + (Math.random() * 20) + 's';
-                el.style.animationDelay = (Math.random() * 18) + 's';
-                el.style.fontSize = (esMobile ? 1.0 : 1.1) + (Math.random() * 1.2) + 'rem';
-                container.appendChild(el);
-            }
-        })();
-    </script>
-
-    <!-- 🏆 BADGE FLOTANTE MUNDIAL -->
-    <div id="badge-mundial" aria-hidden="true">
-        <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); border: 1px solid rgba(250,204,21,0.35); border-radius: 14px; padding: 7px 12px; display: flex; flex-direction: column; align-items: center; gap: 1px; box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 12px rgba(250,204,21,0.12);">
-            <span style="font-size: 1.3rem; line-height: 1;">🏆</span>
-            <span style="font-size: 9px; font-weight: 900; color: #fbbf24; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2;">Mundial</span>
-            <span style="font-size: 8px; font-weight: 700; color: rgba(251,191,36,0.7); letter-spacing: 0.05em;">2026</span>
-        </div>
-    </div>
 
     <!-- ─── SECCIÓN 1: BARRA DEL LOGO Y BUSCADOR ─── -->
     <div class="bg-white dark:bg-black py-3 px-4 md:py-4 md:px-6 border-b border-zinc-200 dark:border-zinc-900 sticky top-0 z-[60] transition-colors duration-300">
@@ -420,12 +200,7 @@
         </div>
     </div>
 
-    <!-- ─── SECCIÓN 2: BANNER MUNDIAL ROTATIVO ─── -->
-    <div class="py-2 border-b border-zinc-900 text-center overflow-hidden flex items-center h-8" style="background: linear-gradient(90deg, #0a0a0a 0%, #0f1c0a 40%, #0a0a0a 100%)">
-        <marquee behavior="scroll" direction="left" scrollamount="5" class="text-[11px] font-bold tracking-widest uppercase whitespace-nowrap" style="color: #fbbf24;">
-            🏆 MUNDIAL 2026 EN VIVO &nbsp;⚽&nbsp; VAPE &amp; DISFRUTA EL PARTIDO <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🇨🇴 COLOMBIA AL MUNDIAL &nbsp;⚽&nbsp; PIDE TU VAPE ANTES DEL PARTIDO <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🏆 ENVÍOS EN RIOHACHA CONTRA ENTREGA &nbsp;⚽&nbsp; MUNDIAL 2026 USA 🇺🇸 MEX 🇲🇽 CAN 🇨🇦 <span style="color: rgba(251,191,36,0.4); margin: 0 24px;">|</span> 🔥 NUEVOS SABORES LLEGANDO 🔥
-        </marquee>
-    </div>
+
 
     <!-- ─── SECCIÓN 3: CARRUSEL DINÁMICO DE NOVEDADES (PREMIUM) ─── -->
     <main class="container mx-auto px-4 my-5 md:my-8 relative group max-w-6xl">
