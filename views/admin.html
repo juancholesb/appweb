@@ -762,12 +762,16 @@
         btn.disabled = true;
 
         try {
-            // 1. Ejecutar IA de imgly para remover fondo
+            // 1. Ejecutar IA de imgly para remover fondo (usando proxy para evitar CORS)
             console.log("Iniciando IA para quitar fondo...");
             const config = {
                 publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/" // Fuerza CDN para los modelos ONNX
             };
-            const blobRecortado = await imglyRemoveBackground(urlOriginal, config);
+            
+            // Construir URL del proxy
+            const proxyUrl = '/api/admin/proxy-image?url=' + encodeURIComponent(urlOriginal);
+            
+            const blobRecortado = await imglyRemoveBackground(proxyUrl, config);
 
             // 2. Subir imagen procesada a nuestro servidor
             const formData = new FormData();

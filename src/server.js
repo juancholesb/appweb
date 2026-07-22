@@ -96,6 +96,28 @@ app.post('/api/upload', protegerVistaAdmin, upload.single('imagen'), (req, res) 
     res.json({ url: publicUrl });
 });
 
+// Ruta proxy para evadir CORS al descargar imágenes de otros servidores
+app.get('/api/admin/proxy-image', protegerVistaAdmin, async (req, res) => {
+    try {
+        const imageUrl = req.query.url;
+        if (!imageUrl) return res.status(400).send('URL requerida');
+        
+        // Usar fetch nativo de Node.js (disponible en Node 18+)
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType) res.setHeader('Content-Type', contentType);
+        
+        // Transmitir la imagen como buffer
+        const arrayBuffer = await response.arrayBuffer();
+        res.send(Buffer.from(arrayBuffer));
+    } catch (error) {
+        console.error('Error en proxy-image:', error);
+        res.status(500).send('Error al descargar la imagen');
+    }
+});
+
 // =========================================================================
 // API
 // =========================================================================
