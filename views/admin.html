@@ -206,21 +206,44 @@
         let editProductoId = null;
         let editPromoId = null;
 
-        // Inyectar fila de sabor con stock individual
-        function agregarFilaSabor(nombre = "", stock = 0) {
+        // Inyectar fila de sabor con stock individual e imagen opcional
+        function agregarFilaSabor(nombre = "", stock = 0, imagen = "") {
             const fila = document.createElement("div");
-            fila.className = "flex gap-2 items-center fila-sabor bg-zinc-950/50 p-2 rounded-lg border border-zinc-800/50";
+            fila.className = "fila-sabor bg-zinc-950/50 rounded-xl border border-zinc-800/50 overflow-hidden";
             fila.innerHTML = `
-                <span class="text-zinc-500 text-xs">💨</span>
-                <input type="text" value="${nombre}" placeholder="Nombre del sabor" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-xs focus:border-cyan-500 input-sabor-nombre" required>
-                <div class="flex items-center gap-1">
-                    <input type="number" min="0" value="${stock}" placeholder="0" class="w-16 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-center outline-none text-xs focus:border-cyan-500 input-sabor-stock" required>
-                    <span class="text-zinc-600 text-[10px]">uds</span>
+                <div class="flex gap-2 items-center p-2">
+                    <span class="text-zinc-500 text-xs flex-shrink-0">💨</span>
+                    <input type="text" value="${nombre}" placeholder="Nombre del sabor" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-xs focus:border-cyan-500 input-sabor-nombre" required>
+                    <div class="flex items-center gap-1 flex-shrink-0">
+                        <input type="number" min="0" value="${stock}" placeholder="0" class="w-14 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-center outline-none text-xs focus:border-cyan-500 input-sabor-stock" required>
+                        <span class="text-zinc-600 text-[10px]">uds</span>
+                    </div>
+                    <button type="button" onclick="this.closest('.fila-sabor').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
                 </div>
-                <button type="button" onclick="this.parentElement.remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition">✕</button>
+                <div class="flex items-center gap-2 px-2 pb-2">
+                    <span class="text-[10px] text-zinc-600 flex-shrink-0">🖼️</span>
+                    <input type="url" value="${imagen}" placeholder="URL imagen de este sabor (opcional)" 
+                        class="flex-1 bg-zinc-950 border border-zinc-800/60 rounded-lg p-1 text-zinc-400 outline-none text-[10px] focus:border-purple-500/50 focus:text-white input-sabor-imagen placeholder-zinc-700 transition-colors"
+                        oninput="previewSaborImagen(this)">
+                    <div class="sabor-img-preview w-7 h-7 rounded-full overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                        ${imagen ? `<img src="${imagen}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-zinc-600\\'>?</span>'">` : '<span class="text-[8px] text-zinc-700">+</span>'}
+                    </div>
+                </div>
             `;
             contenedorSabores.appendChild(fila);
         }
+
+        // Preview en tiempo real de la imagen del sabor
+        window.previewSaborImagen = function(input) {
+            const preview = input.closest('.fila-sabor').querySelector('.sabor-img-preview');
+            if (!preview) return;
+            const url = input.value.trim();
+            if (url) {
+                preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
+            } else {
+                preview.innerHTML = '<span class="text-[8px] text-zinc-700">+</span>';
+            }
+        };
 
         document.getElementById("btn-agregar-sabor").addEventListener("click", () => agregarFilaSabor());
 
@@ -454,11 +477,11 @@
                 const saboresArr = Array.isArray(prod.sabores) ? prod.sabores : String(prod.sabores).split(',');
                 saboresArr.forEach(s => {
                     if (typeof s === 'object' && s.nombre) {
-                        // Nuevo formato: {nombre, stock}
-                        agregarFilaSabor(s.nombre.trim(), Number(s.stock || 0));
+                        // Nuevo formato: {nombre, stock, imagen}
+                        agregarFilaSabor(s.nombre.trim(), Number(s.stock || 0), s.imagen || "");
                     } else {
                         // Formato legacy: string
-                        agregarFilaSabor(String(s).trim(), 0);
+                        agregarFilaSabor(String(s).trim(), 0, "");
                     }
                 });
             }
@@ -566,13 +589,14 @@
         document.getElementById("form-producto").addEventListener("submit", async (e) => {
             e.preventDefault();
             
-            // Recolectar sabores con su stock individual
+            // Recolectar sabores con su stock individual e imagen opcional
             const arraySabores = [];
             document.querySelectorAll(".fila-sabor").forEach(f => {
                 const nombreSabor = f.querySelector(".input-sabor-nombre").value.trim();
                 const stockSabor = Number(f.querySelector(".input-sabor-stock").value) || 0;
+                const imagenSabor = (f.querySelector(".input-sabor-imagen")?.value || "").trim();
                 if(nombreSabor) {
-                    arraySabores.push({ nombre: nombreSabor, stock: stockSabor });
+                    arraySabores.push({ nombre: nombreSabor, stock: stockSabor, imagen: imagenSabor || null });
                 }
             });
 

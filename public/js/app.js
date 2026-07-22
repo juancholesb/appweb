@@ -29,12 +29,16 @@ function parsearSabores(saboresRaw) {
     if (!saboresRaw) return [];
     if (Array.isArray(saboresRaw)) {
         return saboresRaw.map(s => {
-            if (typeof s === 'object' && s.nombre) return { nombre: s.nombre.trim(), stock: Number(s.stock || 0) };
-            return { nombre: String(s).trim(), stock: -1 }; // -1 = stock desconocido
+            if (typeof s === 'object' && s.nombre) return { 
+                nombre: s.nombre.trim(), 
+                stock: Number(s.stock || 0), 
+                imagen: s.imagen || null  // imagen opcional por sabor
+            };
+            return { nombre: String(s).trim(), stock: -1, imagen: null };
         });
     }
     if (typeof saboresRaw === 'string') {
-        return saboresRaw.split(',').map(s => ({ nombre: s.trim(), stock: -1 }));
+        return saboresRaw.split(',').map(s => ({ nombre: s.trim(), stock: -1, imagen: null }));
     }
     return [];
 }
@@ -436,54 +440,42 @@ window.abrirDetalleProducto = function(id) {
     const agotado = stockTotal === 0;
     const primerSaborDisponible = saboresParsed.find(s => s.stock !== 0);
 
-    // 📸 GALERÍA MÚLTIPLE
-    const todasLasImagenes = [prod.imagen, ...(prod.imagenesExtra || [])].filter(img => img);
-    let galeriaHtml = '';
-    if (todasLasImagenes.length > 1) {
-        galeriaHtml = `
-            <div class="flex gap-2 mt-4 overflow-x-auto pb-2 px-4 justify-center">
-                ${todasLasImagenes.map((img, idx) => `
-                    <button type="button" onclick="cambiarImagenModal('${img}', this)" class="modal-thumb flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 ${idx === 0 ? 'border-cyan-400' : 'border-zinc-800'} hover:border-cyan-400 transition-colors bg-zinc-900 cursor-pointer">
-                        <img src="${img}" class="w-full h-full object-contain" alt="Thumbnail">
-                    </button>
-                `).join('')}
-            </div>
-        `;
-    }
+    // Imagen activa inicial: la del primer sabor disponible (si tiene), si no la principal del producto
+    const imagenInicial = (primerSaborDisponible?.imagen) || prod.imagen;
 
     // ⭐ SISTEMA DE RESEÑAS
-    let resenasHtml = '';
     const resenas = prod.resenas || [];
-    const promedio = resenas.length > 0 ? (resenas.reduce((sum, r) => sum + r.calificacion, 0) / resenas.length).toFixed(1) : 'Nuevo';
+    const promedio = resenas.length > 0 
+        ? (resenas.reduce((sum, r) => sum + r.calificacion, 0) / resenas.length).toFixed(1) 
+        : 'Nuevo';
 
-    resenasHtml = `
-        <div class="mt-8 border-t border-zinc-800/60 pt-6">
-            <div class="flex justify-between items-center mb-4">
-                <h4 class="text-white font-bold flex items-center gap-2">⭐ Opiniones</h4>
+    const resenasHtml = `
+        <div class="mt-6 border-t border-zinc-800/60 pt-5">
+            <div class="flex justify-between items-center mb-3">
+                <h4 class="text-white font-bold text-sm flex items-center gap-2">⭐ Opiniones</h4>
                 <span class="text-cyan-400 text-xs font-bold bg-cyan-500/10 px-2 py-1 rounded-md border border-cyan-500/20">${promedio} / 5.0 (${resenas.length})</span>
             </div>
-            
-            <div class="space-y-3 max-h-40 overflow-y-auto pr-2 mb-5 custom-scrollbar">
-                ${resenas.length === 0 ? '<p class="text-xs text-zinc-500 italic text-center py-4 bg-zinc-950/50 rounded-xl">Sé el primero en opinar sobre este producto.</p>' : 
-                    resenas.map(r => `
-                        <div class="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/50 hover:border-zinc-700 transition-colors">
+            <div class="space-y-3 max-h-36 overflow-y-auto pr-2 mb-4">
+                ${resenas.length === 0 
+                    ? '<p class="text-xs text-zinc-500 italic text-center py-3 bg-zinc-950/50 rounded-xl">Sé el primero en opinar sobre este producto.</p>' 
+                    : resenas.map(r => `
+                        <div class="bg-zinc-950/80 p-3 rounded-xl border border-zinc-800/50">
                             <div class="flex justify-between items-center mb-1">
                                 <span class="text-xs font-bold text-zinc-300">${r.nombre_cliente}</span>
-                                <span class="text-amber-400 text-[10px] drop-shadow-[0_0_5px_rgba(251,191,36,0.3)]">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
+                                <span class="text-amber-400 text-[10px]">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
                             </div>
                             <p class="text-[11px] text-zinc-400 italic">"${r.comentario}"</p>
-                            <span class="text-[9px] text-zinc-600 block mt-2 font-mono">${new Date(r.fecha).toLocaleDateString()}</span>
+                            <span class="text-[9px] text-zinc-600 block mt-1.5 font-mono">${new Date(r.fecha).toLocaleDateString()}</span>
                         </div>
                     `).join('')
                 }
             </div>
-
             <div class="bg-zinc-950/50 p-4 rounded-xl border border-zinc-800/50">
                 <h5 class="text-[11px] font-bold text-cyan-400 uppercase tracking-wider mb-3">Deja tu opinión</h5>
-                <form onsubmit="enviarResena(event, ${prod.id})" class="space-y-2.5">
+                <form onsubmit="enviarResena(event, ${prod.id})" class="space-y-2">
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="resena-nombre" placeholder="Tu Nombre" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 focus:bg-zinc-800 transition-colors" required>
-                        <select id="resena-estrellas" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 cursor-pointer focus:bg-zinc-800 transition-colors">
+                        <input type="text" id="resena-nombre" placeholder="Tu Nombre" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2 rounded-lg outline-none focus:border-cyan-500 transition-colors" required>
+                        <select id="resena-estrellas" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2 rounded-lg outline-none focus:border-cyan-500 cursor-pointer">
                             <option value="5">⭐⭐⭐⭐⭐</option>
                             <option value="4">⭐⭐⭐⭐</option>
                             <option value="3">⭐⭐⭐</option>
@@ -491,29 +483,43 @@ window.abrirDetalleProducto = function(id) {
                             <option value="1">⭐</option>
                         </select>
                     </div>
-                    <textarea id="resena-comentario" placeholder="¿Qué tal el sabor y la calidad?" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2.5 rounded-lg outline-none focus:border-cyan-500 h-14 resize-none focus:bg-zinc-800 transition-colors" required></textarea>
-                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500/20 to-cyan-400/20 hover:from-cyan-500/40 hover:to-cyan-400/40 text-cyan-400 font-bold text-[10px] border border-cyan-500/30 uppercase tracking-wider py-2.5 rounded-lg transition-all cursor-pointer">Publicar Reseña</button>
+                    <textarea id="resena-comentario" placeholder="¿Qué tal el sabor y la calidad?" class="w-full bg-zinc-900 border border-zinc-800 text-xs text-white p-2 rounded-lg outline-none focus:border-cyan-500 h-14 resize-none" required></textarea>
+                    <button type="submit" class="w-full bg-gradient-to-r from-cyan-500/20 to-cyan-400/20 hover:from-cyan-500/40 hover:to-cyan-400/40 text-cyan-400 font-bold text-[10px] border border-cyan-500/30 uppercase tracking-wider py-2 rounded-lg transition-all cursor-pointer">Publicar Reseña</button>
                 </form>
             </div>
         </div>
     `;
 
-    // Generar chips de sabores
+    // Stock badge
+    let stockBadgeHtml = '';
+    if (stockTotal >= 0) {
+        if (agotado) {
+            stockBadgeHtml = `<span class="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Agotado</span>`;
+        } else {
+            stockBadgeHtml = `<span class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>${stockTotal} disponibles</span>`;
+        }
+    }
+
+    // 💨 Chips de sabores con miniatura de imagen
     let saboresHtml = "";
     if (saboresParsed.length > 0) {
         saboresHtml = `
             <div class="mb-5">
-                <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">Selecciona tu Sabor</label>
+                <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-3">💨 Selecciona tu Sabor</label>
                 <div class="flex flex-wrap gap-2" id="modal-sabores-chips">
                     ${saboresParsed.map((s, i) => {
                         const esAgotado = s.stock === 0;
-                        const esSeleccionado = primerSaborDisponible ? s.nombre === primerSaborDisponible.nombre : i === 0;
+                        const esSeleccionado = primerSaborDisponible 
+                            ? s.nombre === primerSaborDisponible.nombre 
+                            : i === 0;
                         const stockLabel = s.stock >= 0 ? (s.stock > 0 ? `${s.stock}u` : 'Agotado') : '';
+                        const imagenSabor = s.imagen || prod.imagen;
                         return `
                             <button type="button" 
-                                onclick="seleccionarSaborModal('${s.nombre.replace(/'/g, "\\'")}')" 
+                                onclick="seleccionarSaborModal('${s.nombre.replace(/'/g, "\\'")}', '${(imagenSabor || '').replace(/'/g, "\\'")}')" 
                                 data-sabor="${s.nombre}"
-                                class="sabor-chip px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer flex items-center gap-2
+                                data-imagen="${imagenSabor || ''}"
+                                class="sabor-chip flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all duration-200 cursor-pointer
                                 ${esAgotado 
                                     ? 'bg-zinc-900/50 border-zinc-800/50 text-zinc-600 cursor-not-allowed opacity-50' 
                                     : esSeleccionado 
@@ -521,7 +527,10 @@ window.abrirDetalleProducto = function(id) {
                                         : 'bg-zinc-900/60 border-zinc-700/40 text-zinc-300 hover:border-zinc-500 hover:bg-zinc-800/60'
                                 }"
                                 ${esAgotado ? 'disabled' : ''}>
-                                <span>💨</span>
+                                ${imagenSabor 
+                                    ? `<img src="${imagenSabor}" class="w-6 h-6 rounded-full object-cover border border-zinc-700/50 flex-shrink-0" onerror="this.style.display='none'">` 
+                                    : `<span class="text-sm">💨</span>`
+                                }
                                 <span>${s.nombre}</span>
                                 ${stockLabel ? `<span class="text-[9px] font-mono ${esAgotado ? 'text-red-500' : 'text-zinc-500'}">${stockLabel}</span>` : ''}
                             </button>
@@ -543,81 +552,88 @@ window.abrirDetalleProducto = function(id) {
         `;
     }
 
-    // Stock badge para el modal
-    let stockBadgeModal = '';
-    if (stockTotal >= 0) {
-        if (agotado) {
-            stockBadgeModal = `<span class="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>Agotado</span>`;
-        } else {
-            stockBadgeModal = `<span class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 px-2.5 py-1 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>${stockTotal} disponibles</span>`;
-        }
-    }
-
     const esMobile = window.innerWidth < 768;
+
+    // 🎨 NUEVO MODAL HERO LAYOUT
     contenido.innerHTML = `
-        <!-- Barra superior sticky con botón cerrar (siempre visible en móvil) -->
-        <div class="close-bar sticky top-0 z-30 flex items-center justify-end px-4 pt-3 pb-1 bg-zinc-900/95 backdrop-blur-sm ${esMobile ? '' : 'hidden'}">
-            <button onclick="cerrarDetalleProducto()" class="w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
-        </div>
-        <!-- Botón cerrar desktop (absolute, solo visible en desktop) -->
-        <button onclick="cerrarDetalleProducto()" class="${esMobile ? 'hidden' : 'absolute top-4 right-4'} w-10 h-10 flex items-center justify-center text-zinc-400 bg-zinc-950/80 backdrop-blur-md rounded-full z-20 cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90 text-lg">✕</button>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2">
-            <!-- Imagen con efecto premium y galería -->
-            <div class="flex flex-col bg-zinc-950 relative overflow-hidden">
-                <div class="relative p-8 flex items-center justify-center flex-1 min-h-[220px] md:min-h-[280px]">
-                    <!-- Resplandor difuso del producto -->
-                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/8 via-transparent to-purple-500/5 pointer-events-none"></div>
-                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-cyan-500/10 rounded-full blur-[60px] pointer-events-none"></div>
-                    <!-- Patrón decorativo -->
-                    <div class="absolute top-4 left-4 w-16 h-16 border border-cyan-500/10 rounded-full pointer-events-none"></div>
-                    <div class="absolute bottom-4 right-4 w-8 h-8 border border-cyan-500/10 rounded-full pointer-events-none"></div>
-                    <!-- Imagen -->
-                    <img id="modal-img-principal" src="${prod.imagen}" class="max-h-56 md:max-h-64 object-contain relative z-10 drop-shadow-[0_20px_40px_rgba(6,182,212,0.2)] hover:scale-105 transition-transform duration-500" alt="${prod.nombre}">
-                </div>
-                ${galeriaHtml}
-            </div>
+        <!-- ─── HERO: Imagen grande + botón cerrar ─── -->
+        <div class="relative bg-zinc-950 overflow-hidden" style="min-height: ${esMobile ? '280px' : '360px'}; max-height: ${esMobile ? '300px' : '420px'};">
+
+            <!-- Fondo difuminado de color (copia de la imagen) -->
+            <div id="modal-bg-blur" class="absolute inset-0 scale-110 blur-2xl opacity-30 transition-all duration-700 bg-cover bg-center" style="background-image: url('${imagenInicial}');"></div>
             
-            <!-- Info del producto -->
-            <div class="p-4 md:p-8 bg-zinc-900 flex flex-col justify-between max-h-[70vh] md:max-h-[85vh] overflow-y-auto custom-scrollbar mobile-modal-content">
-                <div>
-                    <!-- Badges -->
-                    <div class="flex flex-wrap items-center gap-2 mb-4">
-                        <span class="text-[9px] tracking-widest font-bold uppercase text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20 inline-flex items-center gap-1">
-                            <span class="w-1 h-1 rounded-full bg-cyan-400"></span>${prod.categoria || 'Desechables'}
-                        </span>
-                        ${stockBadgeModal}
-                    </div>
-                    
-                    <h3 class="text-xl md:text-2xl font-black text-white mb-3 leading-tight">${prod.nombre}</h3>
-                    <p class="text-zinc-400 text-sm mb-6 font-light leading-relaxed">${prod.descripcion || 'Sin descripción disponible.'}</p>
-                    
-                    ${saboresHtml}
-                    
-                    <!-- Cantidad -->
-                    <div class="mb-4">
-                        <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Cantidad</label>
-                        <div class="flex items-center gap-1">
-                            <button type="button" onclick="alterarCantidadModal(-1)" class="w-10 h-10 md:w-11 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">−</button>
-                            <input type="number" id="modal-cantidad-input" value="1" min="1" class="w-12 h-10 md:w-14 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-center text-sm font-mono font-bold text-white rounded-xl outline-none" readonly>
-                            <button type="button" onclick="alterarCantidadModal(1)" class="w-10 h-10 md:w-11 md:h-11 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">+</button>
-                        </div>
-                    </div>
-                    
-                    ${resenasHtml}
+            <!-- Overlay gradiente premium -->
+            <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-zinc-950 pointer-events-none z-10"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-cyan-900/10 via-transparent to-purple-900/10 pointer-events-none z-10"></div>
+            
+            <!-- Destellos de luz decorativos -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none z-10"></div>
+
+            <!-- Imagen principal del modal -->
+            <div class="absolute inset-0 flex items-center justify-center z-20 p-6">
+                <img id="modal-img-principal" 
+                    src="${imagenInicial}" 
+                    alt="${prod.nombre}"
+                    class="max-h-full max-w-full object-contain drop-shadow-[0_20px_60px_rgba(6,182,212,0.3)] transition-all duration-500 hover:scale-105"
+                    style="max-height: ${esMobile ? '240px' : '320px'};">
+            </div>
+
+            <!-- Badge categoría top-left -->
+            <div class="absolute top-4 left-4 z-30">
+                <span class="text-[9px] tracking-widest font-bold uppercase text-cyan-400 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-cyan-500/30 inline-flex items-center gap-1">
+                    <span class="w-1 h-1 rounded-full bg-cyan-400"></span>${prod.categoria || 'Desechables'}
+                </span>
+            </div>
+
+            <!-- Botón cerrar top-right -->
+            <button onclick="cerrarDetalleProducto()" 
+                class="absolute top-4 right-4 z-30 w-9 h-9 flex items-center justify-center text-zinc-400 bg-black/60 backdrop-blur-md rounded-full cursor-pointer hover:text-white hover:bg-zinc-800 border border-zinc-700/50 transition-all duration-200 active:scale-90">✕</button>
+        </div>
+
+        <!-- ─── CUERPO: Info, Sabores, Carrito ─── -->
+        <div class="bg-zinc-900 overflow-y-auto mobile-modal-content" style="max-height: ${esMobile ? 'calc(100dvh - 300px)' : '55vh'};">
+            <div class="p-5 md:p-7">
+
+                <!-- Nombre y stock -->
+                <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+                    <h3 class="text-xl md:text-2xl font-black text-white leading-tight flex-1">${prod.nombre}</h3>
+                    ${stockBadgeHtml}
                 </div>
-                
-                <!-- Subtotal y CTA -->
-                <div class="pt-5 border-t border-zinc-800/60 flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 sticky bottom-0 bg-zinc-900 py-2">
-                    <div class="flex flex-col">
-                        <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Subtotal</span>
-                        <span id="modal-precio-total" class="text-2xl font-black text-white font-mono" data-base-price="${prod.precio}">$${Number(prod.precio).toLocaleString('es-CO')}</span>
+
+                <p class="text-zinc-400 text-sm mb-5 font-light leading-relaxed">${prod.descripcion || 'Sin descripción disponible.'}</p>
+
+                <!-- Sabores chips -->
+                ${saboresHtml}
+
+                <!-- Cantidad -->
+                <div class="mb-5">
+                    <label class="block text-[10px] text-zinc-500 uppercase tracking-widest font-bold mb-2">Cantidad</label>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="alterarCantidadModal(-1)" 
+                            class="w-10 h-10 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">−</button>
+                        <input type="number" id="modal-cantidad-input" value="1" min="1" 
+                            class="w-14 h-10 bg-zinc-950/80 border border-zinc-700/50 text-center text-sm font-mono font-bold text-white rounded-xl outline-none" readonly>
+                        <button type="button" onclick="alterarCantidadModal(1)" 
+                            class="w-10 h-10 bg-zinc-950/80 border border-zinc-700/50 text-lg font-bold text-white hover:bg-zinc-800 hover:text-cyan-400 hover:border-cyan-500/30 active:scale-90 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200">+</button>
                     </div>
-                    <button onclick="agregarAlCarritoDesdeModal(${prod.id}, event)" 
-                            class="flex-1 max-w-[220px] bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-sm py-3.5 px-4 rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] transition-all duration-300 transform active:scale-95 cursor-pointer ${agotado ? 'opacity-50 pointer-events-none' : ''}">
-                        Añadir al Carrito 🛒
-                    </button>
                 </div>
+
+                <!-- Reseñas -->
+                ${resenasHtml}
+            </div>
+
+            <!-- ─── CTA Sticky: Precio + Botón Carrito ─── -->
+            <div class="sticky bottom-0 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-800/60 px-5 md:px-7 py-4 flex items-center justify-between gap-4">
+                <div class="flex flex-col">
+                    <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">Subtotal</span>
+                    <span id="modal-precio-total" class="text-2xl font-black text-white font-mono" data-base-price="${prod.precio}">
+                        $${Number(prod.precio).toLocaleString('es-CO')}
+                    </span>
+                </div>
+                <button onclick="agregarAlCarritoDesdeModal(${prod.id}, event)" 
+                    class="flex-1 max-w-[220px] bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-sm py-3.5 px-4 rounded-xl shadow-[0_0_25px_rgba(6,182,212,0.3)] hover:shadow-[0_0_40px_rgba(6,182,212,0.5)] transition-all duration-300 transform active:scale-95 cursor-pointer ${agotado ? 'opacity-50 pointer-events-none' : ''}">
+                    Añadir al Carrito 🛒
+                </button>
             </div>
         </div>
     `;
@@ -633,9 +649,7 @@ window.abrirDetalleProducto = function(id) {
     if (window.innerWidth < 768) {
         setTimeout(() => {
             const sheet = document.getElementById("contenido-modal-detalle");
-            if (sheet) {
-                sheet.style.transform = "translateY(0)";
-            }
+            if (sheet) sheet.style.transform = "translateY(0)";
         }, 20);
     }
 };
@@ -707,7 +721,7 @@ window.enviarResena = async function(event, productoId) {
 };
 
 // Seleccionar sabor en modal (chips)
-window.seleccionarSaborModal = function(sabor) {
+window.seleccionarSaborModal = function(sabor, imagenSabor) {
     document.querySelectorAll('.sabor-chip:not([disabled])').forEach(chip => {
         const esSelecc = chip.dataset.sabor === sabor;
         chip.className = chip.className.replace(/bg-cyan-500\/15|border-cyan-500\/50|text-cyan-400|shadow-\[0_0_15px_rgba\(6,182,212,0\.15\)\]|bg-zinc-900\/60|border-zinc-700\/40|text-zinc-300|hover:border-zinc-500|hover:bg-zinc-800\/60/g, '');
@@ -719,6 +733,28 @@ window.seleccionarSaborModal = function(sabor) {
     });
     const hiddenInput = document.getElementById("modal-sabor-select");
     if (hiddenInput) hiddenInput.value = sabor;
+
+    // Cambiar imagen principal si el sabor tiene imagen
+    if (imagenSabor) {
+        const imgPrincipal = document.getElementById("modal-img-principal");
+        const bgBlur = document.getElementById("modal-bg-blur");
+        if (imgPrincipal) {
+            imgPrincipal.style.opacity = "0";
+            imgPrincipal.style.transform = "scale(0.95)";
+            setTimeout(() => {
+                imgPrincipal.src = imagenSabor;
+                imgPrincipal.style.opacity = "1";
+                imgPrincipal.style.transform = "scale(1)";
+            }, 300);
+        }
+        if (bgBlur) {
+            bgBlur.style.opacity = "0";
+            setTimeout(() => {
+                bgBlur.style.backgroundImage = `url('${imagenSabor}')`;
+                bgBlur.style.opacity = "0.3";
+            }, 300);
+        }
+    }
 };
 
 window.alterarCantidadModal = function(cambio) {
