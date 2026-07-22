@@ -15,18 +15,18 @@
 
 CREATE TABLE IF NOT EXISTS categorias (
     id SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL UNIQUE
+    nombre TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS promociones (
     id SERIAL PRIMARY KEY,
-    titulo VARCHAR(150) NOT NULL,
-    subtitulo VARCHAR(200),
+    titulo TEXT NOT NULL,
+    subtitulo TEXT,
     descripcion TEXT,
-    texto_boton VARCHAR(50) DEFAULT 'Comprar Ahora',
+    texto_boton TEXT DEFAULT 'Comprar Ahora',
     imagen TEXT,
-    color_fondo VARCHAR(100) DEFAULT 'from-zinc-900 via-zinc-900 to-cyan-950/40',
-    enlace VARCHAR(100) DEFAULT '#productos'
+    color_fondo TEXT DEFAULT 'from-zinc-900 via-zinc-900 to-cyan-950/40',
+    enlace TEXT DEFAULT '#productos'
 );
 
 -- Categorías iniciales sugeridas (puedes borrarlas o editarlas desde el admin)
