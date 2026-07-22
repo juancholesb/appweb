@@ -759,8 +759,8 @@
 
             try {
                 console.log("🤖 Cargando IA dinámicamente...");
-                // Importar la librería dinámicamente para que no bloquee el HTML global
-                const { removeBackground } = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.mjs');
+                // Usamos esm.sh para resolver las dependencias internas (como lodash) que rompen el import puro
+                const { removeBackground } = await import('https://esm.sh/@imgly/background-removal@1.4.5');
 
                 console.log("🤖 Descargando imagen vía proxy...");
                 // 1. Descargar imagen desde nuestro proxy (evita CORS del navegador)
