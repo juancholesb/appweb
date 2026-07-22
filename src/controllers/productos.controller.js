@@ -7,7 +7,7 @@ exports.obtenerTodos = async (req, res) => {
         // Para cada producto, traemos sus sabores, imágenes extra y reseñas
         const productos = await Promise.all(resultado.rows.map(async (p) => {
             const resSabores = await db.query(
-                'SELECT id, nombre, stock FROM producto_sabores WHERE producto_id = $1 ORDER BY id',
+                'SELECT id, nombre, stock, imagen FROM producto_sabores WHERE producto_id = $1 ORDER BY id',
                 [p.id]
             );
 
@@ -82,14 +82,15 @@ exports.crearProducto = async (req, res) => {
         const resultado = await db.query(querySQL, valores);
         const productoId = resultado.rows[0].id;
 
-        // Insertar sabores individuales con su stock
+        // Insertar sabores individuales con su stock e imagen
         if (Array.isArray(sabores) && sabores.length > 0) {
             for (const sabor of sabores) {
                 const nombreSabor = typeof sabor === 'object' ? sabor.nombre : sabor;
                 const stockSabor = typeof sabor === 'object' ? Number(sabor.stock || 0) : Number(stock || 0);
+                const imagenSabor = typeof sabor === 'object' ? sabor.imagen || null : null;
                 await db.query(
-                    'INSERT INTO producto_sabores (producto_id, nombre, stock) VALUES ($1, $2, $3)',
-                    [productoId, nombreSabor.trim(), stockSabor]
+                    'INSERT INTO producto_sabores (producto_id, nombre, stock, imagen) VALUES ($1, $2, $3, $4)',
+                    [productoId, nombreSabor.trim(), stockSabor, imagenSabor]
                 );
             }
         }
@@ -135,16 +136,17 @@ exports.editarProducto = async (req, res) => {
             [nombre, descripcion, precio, categoria, imagen, stringSabores, stockFinal, id]
         );
 
-        // Reemplazar sabores: borrar los viejos e insertar los nuevos con stock actualizado
+        // Reemplazar sabores: borrar los viejos e insertar los nuevos con stock y la imagen actualizada
         if (Array.isArray(sabores)) {
             await db.query('DELETE FROM producto_sabores WHERE producto_id = $1', [id]);
             for (const sabor of sabores) {
                 const nombreSabor = typeof sabor === 'object' ? sabor.nombre : sabor;
                 const stockSabor = typeof sabor === 'object' ? Number(sabor.stock || 0) : 0;
+                const imagenSabor = typeof sabor === 'object' ? sabor.imagen || null : null;
                 if (nombreSabor && nombreSabor.trim()) {
                     await db.query(
-                        'INSERT INTO producto_sabores (producto_id, nombre, stock) VALUES ($1, $2, $3)',
-                        [id, nombreSabor.trim(), stockSabor]
+                        'INSERT INTO producto_sabores (producto_id, nombre, stock, imagen) VALUES ($1, $2, $3, $4)',
+                        [id, nombreSabor.trim(), stockSabor, imagenSabor]
                     );
                 }
             }
