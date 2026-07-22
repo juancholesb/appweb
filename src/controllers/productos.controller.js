@@ -58,7 +58,7 @@ exports.obtenerTodos = async (req, res) => {
 };
 
 exports.crearProducto = async (req, res) => {
-    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra, blend_fondo } = req.body;
     try {
         // Preparar string de sabores para la columna legacy
         let stringSabores = '';
@@ -73,11 +73,11 @@ exports.crearProducto = async (req, res) => {
             : Number(stock) || 0;
 
         const querySQL = `
-            INSERT INTO productos (nombre, descripcion, precio, categoria, imagen, sabores, stock) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7) 
+            INSERT INTO productos (nombre, descripcion, precio, categoria, imagen, sabores, stock, blend_fondo) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
             RETURNING id
         `;
-        const valores = [nombre, descripcion, precio, categoria, imagen || 'img/logo.png', stringSabores, stockTotal];
+        const valores = [nombre, descripcion, precio, categoria, imagen || 'img/logo.png', stringSabores, stockTotal, blend_fondo === true || blend_fondo === 'true'];
         
         const resultado = await db.query(querySQL, valores);
         const productoId = resultado.rows[0].id;
@@ -115,7 +115,7 @@ exports.crearProducto = async (req, res) => {
 
 exports.editarProducto = async (req, res) => {
     const { id } = req.params;
-    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra } = req.body;
+    const { nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra, blend_fondo } = req.body;
     try {
         // Preparar string de sabores para la columna legacy
         let stringSabores = '';
@@ -132,8 +132,8 @@ exports.editarProducto = async (req, res) => {
         const stockFinal = stockTotal !== null ? stockTotal : 0;
 
         await db.query(
-            `UPDATE productos SET nombre=$1, descripcion=$2, precio=$3, categoria=$4, imagen=$5, sabores=$6, stock=$7 WHERE id=$8`,
-            [nombre, descripcion, precio, categoria, imagen, stringSabores, stockFinal, id]
+            `UPDATE productos SET nombre=$1, descripcion=$2, precio=$3, categoria=$4, imagen=$5, sabores=$6, stock=$7, blend_fondo=$8 WHERE id=$9`,
+            [nombre, descripcion, precio, categoria, imagen, stringSabores, stockFinal, blend_fondo === true || blend_fondo === 'true', id]
         );
 
         // Reemplazar sabores: borrar los viejos e insertar los nuevos con stock y la imagen actualizada

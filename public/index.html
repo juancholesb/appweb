@@ -158,6 +158,58 @@
             }
         }
     </style>
+
+    <style>
+        /* ─── Toggle Blend Mode ─── */
+        /* Cuando está activo, TODAS las imágenes de productos usan multiply */
+        body.blend-activo .img-producto {
+            mix-blend-mode: multiply;
+        }
+        /* Botón toggle de blend mode */
+        #btn-blend-toggle {
+            position: fixed;
+            bottom: 90px;
+            right: 16px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(113, 113, 122, 0.4);
+            color: #a1a1aa;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        #btn-blend-toggle:hover {
+            border-color: rgba(6,182,212,0.4);
+            color: #22d3ee;
+            box-shadow: 0 4px 20px rgba(6,182,212,0.15);
+        }
+        body.blend-activo #btn-blend-toggle {
+            background: rgba(6,182,212,0.12);
+            border-color: rgba(6,182,212,0.5);
+            color: #22d3ee;
+            box-shadow: 0 0 20px rgba(6,182,212,0.2);
+        }
+        .blend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #52525b;
+            transition: background 0.25s;
+            flex-shrink: 0;
+        }
+        body.blend-activo .blend-dot {
+            background: #22d3ee;
+            box-shadow: 0 0 6px #22d3ee;
+        }
+    </style>
 </head>
 <body class="bg-zinc-100 dark:bg-black text-zinc-900 dark:text-white antialiased transition-colors duration-300">
 
@@ -363,6 +415,27 @@
             💬 Asesoría CBflow ¡Clic aquí!
         </span>
     </a>
+
+<!-- ─── Botón flotante: Toggle de Fondos Blancos ─── -->
+<button id="btn-blend-toggle" onclick="toggleBlend()" title="Activar/desactivar fusión de fondos blancos">
+    <span class="blend-dot"></span>
+    <span id="blend-label">Fondo: Normal</span>
+</button>
+
+<script>
+    // Leer preferencia guardada
+    const blendGuardado = localStorage.getItem('cbflow_blend') === 'true';
+    if (blendGuardado) {
+        document.body.classList.add('blend-activo');
+        document.getElementById('blend-label').textContent = 'Fondo: Fusión ✓';
+    }
+
+    function toggleBlend() {
+        const activo = document.body.classList.toggle('blend-activo');
+        document.getElementById('blend-label').textContent = activo ? 'Fondo: Fusión ✓' : 'Fondo: Normal';
+        localStorage.setItem('cbflow_blend', activo ? 'true' : 'false');
+    }
+</script>
 
 </body>
 </html>

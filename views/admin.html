@@ -93,6 +93,19 @@
                     <div id="contenedor-sabores" class="space-y-2 max-h-36 overflow-y-auto pr-1"></div>
                 </div>
 
+                <!-- Checkbox blend fondo -->
+                <label class="flex items-center gap-3 cursor-pointer group select-none bg-zinc-950/50 border border-zinc-800/50 hover:border-cyan-500/30 rounded-xl p-3 transition-all">
+                    <div class="relative flex-shrink-0">
+                        <input type="checkbox" id="prod-blend" class="sr-only peer">
+                        <div class="w-10 h-5 bg-zinc-800 rounded-full peer-checked:bg-cyan-500/30 border border-zinc-700 peer-checked:border-cyan-500/50 transition-all"></div>
+                        <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-zinc-500 peer-checked:bg-cyan-400 rounded-full transition-all peer-checked:translate-x-5 peer-checked:shadow-[0_0_8px_rgba(6,182,212,0.6)]"></div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors">🎨 Fusionar fondo blanco</p>
+                        <p class="text-[10px] text-zinc-600">Actívalo si la imagen tiene fondo blanco para que se mezcle con el tema oscuro</p>
+                    </div>
+                </label>
+
                 <button type="submit" id="btn-submit-producto" class="w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer">Inyectar al Catálogo</button>
             </form>
         </section>
@@ -470,6 +483,7 @@
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
             document.getElementById("prod-img-extras").value = (prod.imagenesExtra || []).join(',');
+            document.getElementById("prod-blend").checked = prod.blend_fondo === true;
 
             // Re-armar caja de sabores con stock real desde la BD
             contenedorSabores.innerHTML = "";
@@ -601,17 +615,15 @@
             });
 
             const stringExtras = document.getElementById("prod-img-extras").value;
-            const imagenesExtra = stringExtras ? stringExtras.split(',').map(s => s.trim()).filter(s => s) : [];
-
             const data = {
                 nombre: document.getElementById("prod-nombre").value,
+                precio: Number(document.getElementById("prod-precio").value),
                 categoria: document.getElementById("prod-cat").value,
-                precio: document.getElementById("prod-precio").value,
-                descripcion: document.getElementById("prod-desc").value,
                 imagen: document.getElementById("prod-img").value,
+                descripcion: document.getElementById("prod-desc").value,
                 sabores: arraySabores,
-                imagenesExtra: imagenesExtra
-                // Stock total se calcula automáticamente en el backend
+                imagenesExtra: stringExtras ? stringExtras.split(',').map(u => u.trim()).filter(u => u) : [],
+                blend_fondo: document.getElementById("prod-blend").checked
             };
 
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
