@@ -746,9 +746,11 @@
 </body>
 </html>
 
-<!-- IA para remover fondos (Se importa desde CDN, descarga el modelo web automáticamente) -->
-<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
-<script>
+<!-- IA para remover fondos: se carga como módulo ESM -->
+<script type="module">
+    // Importar la librería correctamente como módulo ES
+    import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.mjs';
+
     window.procesarImagenIA = async function(inputElement) {
         const urlOriginal = inputElement.value.trim();
         if (!urlOriginal) {
@@ -756,50 +758,54 @@
             return;
         }
 
+        // El botón es el siguiente elemento hermano
         const btn = inputElement.nextElementSibling;
         const textoOriginal = btn.innerHTML;
-        btn.innerHTML = '<span class="animate-spin inline-block">⏳</span>';
+        btn.innerHTML = '⏳';
         btn.disabled = true;
 
         try {
-            // 1. Ejecutar IA de imgly para remover fondo (usando proxy para evitar CORS)
-            console.log("Iniciando IA para quitar fondo...");
-            const config = {
-                publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/" // Fuerza CDN para los modelos ONNX
-            };
-            
-            // Construir URL del proxy
-            const proxyUrl = '/api/admin/proxy-image?url=' + encodeURIComponent(urlOriginal);
-            
-            const blobRecortado = await imglyRemoveBackground(proxyUrl, config);
+            console.log("🤖 Descargando imagen vía proxy...");
 
-            // 2. Subir imagen procesada a nuestro servidor
+            // 1. Descargar imagen desde nuestro proxy (evita CORS del navegador)
+            const proxyUrl = '/api/admin/proxy-image?url=' + encodeURIComponent(urlOriginal);
+            const respImg = await fetch(proxyUrl);
+            if (!respImg.ok) throw new Error('No se pudo descargar la imagen. Revisa el link.');
+            const imgBlob = await respImg.blob();
+
+            console.log("🤖 Procesando IA para quitar fondo...");
+
+            // 2. Pasar el blob a la IA para quitar el fondo
+            const config = {
+                publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/'
+            };
+            // Convertir blob a ArrayBuffer que acepta la librería
+            const blobRecortado = await removeBackground(imgBlob, config);
+
+            console.log("🤖 Subiendo imagen limpia al servidor...");
+
+            // 3. Subir la imagen procesada al servidor
             const formData = new FormData();
             formData.append('imagen', blobRecortado, 'vape-limpio.png');
 
-            const res = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            });
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            if (!res.ok) throw new Error('Error al subir la imagen limpia al servidor.');
 
-            if (!res.ok) throw new Error("Error al subir al servidor");
-            
             const data = await res.json();
-            
-            // 3. Reemplazar la URL en el input
+
+            // 4. Reemplazar URL en el input
             inputElement.value = data.url;
-            
-            // Disparar evento para que se actualicen las previsualizaciones
             inputElement.dispatchEvent(new Event('input'));
-            
-            btn.innerHTML = '✅ OK';
-            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 2000);
-            
+
+            btn.innerHTML = '✅';
+            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
+            console.log("✅ ¡Imagen procesada y guardada en:", data.url);
+
         } catch (error) {
-            console.error("Error en IA de imagen:", error);
-            alert("Hubo un error procesando la imagen. Revisa que el link original sea directo a una imagen y permita descargas externas (CORS).");
+            console.error("❌ Error IA:", error);
+            alert("❌ Error: " + error.message + "\n\nAsegúrate de que el link sea una URL directa a una imagen (que termine en .jpg, .png, etc.).");
             btn.innerHTML = '❌';
-            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 2000);
+            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
         }
     };
 </script>
