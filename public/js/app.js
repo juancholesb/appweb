@@ -391,7 +391,7 @@ function renderizarProductos(productos) {
                     <div class="absolute inset-0 bg-gradient-to-t from-cyan-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                     
                     <!-- Imagen más grande con mask para difuminar bordes suaves -->
-                    <img src="${p.imagen}" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] -webkit-[mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)]" alt="${p.nombre}" loading="lazy">
+                    <img src="${p.imagen}" class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] mix-blend-mode-multiply [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)] -webkit-[mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)]" style="mix-blend-mode:multiply" alt="${p.nombre}" loading="lazy">
                 </div>
 
                 <!-- Info -->
@@ -575,7 +575,7 @@ window.abrirDetalleProducto = function(id) {
                     src="${imagenInicial}" 
                     alt="${prod.nombre}"
                     class="max-h-full max-w-full object-contain drop-shadow-[0_20px_60px_rgba(6,182,212,0.3)] transition-all duration-500 hover:scale-105"
-                    style="max-height: ${esMobile ? '240px' : '320px'};">
+                    style="mix-blend-mode:multiply; max-height: ${esMobile ? '240px' : '320px'};">
             </div>
 
             <!-- Badge categoría top-left -->
@@ -946,7 +946,7 @@ function actualizarInterfazCarrito() {
             return `
             <div class="flex items-center gap-3 bg-zinc-900 p-3 rounded-xl border border-zinc-800/60 transition-all">
                 <div class="w-12 h-12 bg-zinc-950 rounded-lg flex items-center justify-center p-1 flex-shrink-0 border border-zinc-800">
-                    <img src="${item.imagen || ''}" class="h-full object-contain" alt="${item.nombre || 'Vaper'}">
+                    <img src="${item.imagen || ''}" class="h-full object-contain" style="mix-blend-mode:multiply" alt="${item.nombre || 'Vaper'}">
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="text-white text-xs font-bold truncate">${item.nombre || 'Producto'}</h4>

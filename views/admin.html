@@ -78,10 +78,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <div class="flex gap-1">
-                        <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="flex-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
-                        <button type="button" onclick="procesarImagenIA(this.previousElementSibling)" class="bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-xs font-bold px-3 rounded-xl border border-purple-500/50 hover:scale-105 transition-transform whitespace-nowrap cursor-pointer" title="Quitar fondo y subir al servidor">✨ IA</button>
-                    </div>
+                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 <input type="text" id="prod-img-extras" placeholder="URLs extra separadas por coma (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-[11px]">
@@ -223,13 +220,12 @@
                     </div>
                     <button type="button" onclick="this.closest('.fila-sabor').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
                 </div>
-                <div class="flex items-center gap-1 px-2 pb-2">
+                <div class="flex items-center gap-2 px-2 pb-2">
                     <span class="text-[10px] text-zinc-600 flex-shrink-0">🖼️</span>
                     <input type="url" value="${imagen}" placeholder="URL imagen de este sabor (opcional)" 
-                        class="flex-1 w-full bg-zinc-950 border border-zinc-800/60 rounded-lg p-1.5 text-zinc-400 outline-none text-[10px] focus:border-purple-500/50 focus:text-white input-sabor-imagen placeholder-zinc-700 transition-colors"
+                        class="flex-1 bg-zinc-950 border border-zinc-800/60 rounded-lg p-1.5 text-zinc-400 outline-none text-[10px] focus:border-purple-500/50 focus:text-white input-sabor-imagen placeholder-zinc-700 transition-colors"
                         oninput="previewSaborImagen(this)">
-                    <button type="button" onclick="procesarImagenIA(this.previousElementSibling)" class="bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-purple-500/50 hover:scale-105 transition-transform flex-shrink-0 cursor-pointer" title="Quitar fondo con IA">✨ IA</button>
-                    <div class="sabor-img-preview w-7 h-7 rounded-full overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center ml-1">
+                    <div class="sabor-img-preview w-7 h-7 rounded-full overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
                         ${imagen ? `<img src="${imagen}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-zinc-600\\'>?</span>'">` : '<span class="text-[8px] text-zinc-700">+</span>'}
                     </div>
                 </div>
@@ -744,68 +740,4 @@
 <script src="js-admin/admin-crud.js"></script>
     <script src="js-admin/admin-app.js"></script>
 </body>
-</html>
-
-<!-- IA para remover fondos: se carga como módulo ESM -->
-<script type="module">
-    // Importar la librería correctamente como módulo ES
-    import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.mjs';
-
-    window.procesarImagenIA = async function(inputElement) {
-        const urlOriginal = inputElement.value.trim();
-        if (!urlOriginal) {
-            alert("Primero pega el link de la imagen original en este campo.");
-            return;
-        }
-
-        // El botón es el siguiente elemento hermano
-        const btn = inputElement.nextElementSibling;
-        const textoOriginal = btn.innerHTML;
-        btn.innerHTML = '⏳';
-        btn.disabled = true;
-
-        try {
-            console.log("🤖 Descargando imagen vía proxy...");
-
-            // 1. Descargar imagen desde nuestro proxy (evita CORS del navegador)
-            const proxyUrl = '/api/admin/proxy-image?url=' + encodeURIComponent(urlOriginal);
-            const respImg = await fetch(proxyUrl);
-            if (!respImg.ok) throw new Error('No se pudo descargar la imagen. Revisa el link.');
-            const imgBlob = await respImg.blob();
-
-            console.log("🤖 Procesando IA para quitar fondo...");
-
-            // 2. Pasar el blob a la IA para quitar el fondo
-            const config = {
-                publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/'
-            };
-            // Convertir blob a ArrayBuffer que acepta la librería
-            const blobRecortado = await removeBackground(imgBlob, config);
-
-            console.log("🤖 Subiendo imagen limpia al servidor...");
-
-            // 3. Subir la imagen procesada al servidor
-            const formData = new FormData();
-            formData.append('imagen', blobRecortado, 'vape-limpio.png');
-
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (!res.ok) throw new Error('Error al subir la imagen limpia al servidor.');
-
-            const data = await res.json();
-
-            // 4. Reemplazar URL en el input
-            inputElement.value = data.url;
-            inputElement.dispatchEvent(new Event('input'));
-
-            btn.innerHTML = '✅';
-            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
-            console.log("✅ ¡Imagen procesada y guardada en:", data.url);
-
-        } catch (error) {
-            console.error("❌ Error IA:", error);
-            alert("❌ Error: " + error.message + "\n\nAsegúrate de que el link sea una URL directa a una imagen (que termine en .jpg, .png, etc.).");
-            btn.innerHTML = '❌';
-            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
-        }
-    };
-</script>
+</html>
