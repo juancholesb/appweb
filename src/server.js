@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const session = require('express-session');
+const multer = require('multer');
+const fs = require('fs');
 require('dotenv').config();
 
 const productosRoutes = require('./routes/productos.routes');
@@ -64,6 +66,35 @@ app.get(rutaSecretaAdmin, protegerVistaAdmin, (req, res) => {
 // la ruta secreta protegida de arriba.
 // =========================================================================
 app.use(express.static(path.join(__dirname, '../public')));
+
+// =========================================================================
+// Configuración de subida de imágenes con multer
+// =========================================================================
+const uploadDir = path.join(__dirname, '../public/img/uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname) || '.png';
+        cb(null, 'vape-' + uniqueSuffix + ext);
+    }
+});
+const upload = multer({ storage: storage });
+
+app.post('/api/upload', protegerVistaAdmin, upload.single('imagen'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No se subió ninguna imagen.' });
+    }
+    // Devolver la URL pública donde quedó la imagen
+    const publicUrl = '/img/uploads/' + req.file.filename;
+    res.json({ url: publicUrl });
+});
 
 // =========================================================================
 // API

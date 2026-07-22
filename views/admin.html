@@ -78,7 +78,10 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                    <div class="flex gap-1">
+                        <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="flex-1 w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                        <button type="button" onclick="procesarImagenIA(this.previousElementSibling)" class="bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-xs font-bold px-3 rounded-xl border border-purple-500/50 hover:scale-105 transition-transform whitespace-nowrap cursor-pointer" title="Quitar fondo y subir al servidor">✨ IA</button>
+                    </div>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 <input type="text" id="prod-img-extras" placeholder="URLs extra separadas por coma (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-[11px]">
@@ -220,12 +223,13 @@
                     </div>
                     <button type="button" onclick="this.closest('.fila-sabor').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
                 </div>
-                <div class="flex items-center gap-2 px-2 pb-2">
+                <div class="flex items-center gap-1 px-2 pb-2">
                     <span class="text-[10px] text-zinc-600 flex-shrink-0">🖼️</span>
                     <input type="url" value="${imagen}" placeholder="URL imagen de este sabor (opcional)" 
-                        class="flex-1 bg-zinc-950 border border-zinc-800/60 rounded-lg p-1 text-zinc-400 outline-none text-[10px] focus:border-purple-500/50 focus:text-white input-sabor-imagen placeholder-zinc-700 transition-colors"
+                        class="flex-1 w-full bg-zinc-950 border border-zinc-800/60 rounded-lg p-1.5 text-zinc-400 outline-none text-[10px] focus:border-purple-500/50 focus:text-white input-sabor-imagen placeholder-zinc-700 transition-colors"
                         oninput="previewSaborImagen(this)">
-                    <div class="sabor-img-preview w-7 h-7 rounded-full overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                    <button type="button" onclick="procesarImagenIA(this.previousElementSibling)" class="bg-gradient-to-r from-purple-600 to-cyan-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg border border-purple-500/50 hover:scale-105 transition-transform flex-shrink-0 cursor-pointer" title="Quitar fondo con IA">✨ IA</button>
+                    <div class="sabor-img-preview w-7 h-7 rounded-full overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center ml-1">
                         ${imagen ? `<img src="${imagen}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-zinc-600\\'>?</span>'">` : '<span class="text-[8px] text-zinc-700">+</span>'}
                     </div>
                 </div>
@@ -741,3 +745,57 @@
     <script src="js-admin/admin-app.js"></script>
 </body>
 </html>
+
+<!-- IA para remover fondos (Se importa desde CDN, descarga el modelo web automáticamente) -->
+<script src="https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/index.js"></script>
+<script>
+    window.procesarImagenIA = async function(inputElement) {
+        const urlOriginal = inputElement.value.trim();
+        if (!urlOriginal) {
+            alert("Primero pega el link de la imagen original en este campo.");
+            return;
+        }
+
+        const btn = inputElement.nextElementSibling;
+        const textoOriginal = btn.innerHTML;
+        btn.innerHTML = '<span class="animate-spin inline-block">⏳</span>';
+        btn.disabled = true;
+
+        try {
+            // 1. Ejecutar IA de imgly para remover fondo
+            console.log("Iniciando IA para quitar fondo...");
+            const config = {
+                publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/" // Fuerza CDN para los modelos ONNX
+            };
+            const blobRecortado = await imglyRemoveBackground(urlOriginal, config);
+
+            // 2. Subir imagen procesada a nuestro servidor
+            const formData = new FormData();
+            formData.append('imagen', blobRecortado, 'vape-limpio.png');
+
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) throw new Error("Error al subir al servidor");
+            
+            const data = await res.json();
+            
+            // 3. Reemplazar la URL en el input
+            inputElement.value = data.url;
+            
+            // Disparar evento para que se actualicen las previsualizaciones
+            inputElement.dispatchEvent(new Event('input'));
+            
+            btn.innerHTML = '✅ OK';
+            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 2000);
+            
+        } catch (error) {
+            console.error("Error en IA de imagen:", error);
+            alert("Hubo un error procesando la imagen. Revisa que el link original sea directo a una imagen y permita descargas externas (CORS).");
+            btn.innerHTML = '❌';
+            setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 2000);
+        }
+    };
+</script>
