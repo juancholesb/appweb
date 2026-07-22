@@ -78,10 +78,7 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <div class="flex gap-2 items-center relative">
-                        <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none min-w-0" required>
-                        <button type="button" onclick="window.procesarImagenIA(document.getElementById('prod-img'))" title="Quitar fondo con IA" class="bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl px-3 py-2 font-bold cursor-pointer transition flex-shrink-0">✨ IA</button>
-                    </div>
+                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 <input type="text" id="prod-img-extras" placeholder="URLs extra separadas por coma (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-[11px]">
@@ -473,7 +470,6 @@
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
             document.getElementById("prod-img-extras").value = (prod.imagenesExtra || []).join(',');
-            document.getElementById("prod-blend").checked = prod.blend_fondo === true;
 
             // Re-armar caja de sabores con stock real desde la BD
             contenedorSabores.innerHTML = "";
@@ -612,8 +608,7 @@
                 imagen: document.getElementById("prod-img").value,
                 descripcion: document.getElementById("prod-desc").value,
                 sabores: arraySabores,
-                imagenesExtra: stringExtras ? stringExtras.split(',').map(u => u.trim()).filter(u => u) : [],
-                blend_fondo: document.getElementById("prod-blend").checked
+                imagenesExtra: stringExtras ? stringExtras.split(',').map(u => u.trim()).filter(u => u) : []
             };
 
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
@@ -741,66 +736,5 @@
     </script>
 <script src="js-admin/admin-crud.js"></script>
     <script src="js-admin/admin-app.js"></script>
-
-    <!-- IA para remover fondos: Import Dinámico (corrige error de click) -->
-    <script>
-        window.procesarImagenIA = async function(inputElement) {
-            const urlOriginal = inputElement.value.trim();
-            if (!urlOriginal) {
-                alert("Primero pega el link de la imagen original en este campo.");
-                return;
-            }
-
-            // El botón es el siguiente hermano
-            const btn = inputElement.nextElementSibling;
-            const textoOriginal = btn.innerHTML;
-            btn.innerHTML = '⏳';
-            btn.disabled = true;
-
-            try {
-                console.log("🤖 Cargando IA dinámicamente...");
-                // Usamos esm.sh para resolver las dependencias internas (como lodash) que rompen el import puro
-                const { removeBackground } = await import('https://esm.sh/@imgly/background-removal@1.4.5');
-
-                console.log("🤖 Descargando imagen vía proxy...");
-                // 1. Descargar imagen desde nuestro proxy (evita CORS del navegador)
-                const proxyUrl = '/api/admin/proxy-image?url=' + encodeURIComponent(urlOriginal);
-                const respImg = await fetch(proxyUrl);
-                if (!respImg.ok) throw new Error('No se pudo descargar la imagen. Revisa el link.');
-                const imgBlob = await respImg.blob();
-
-                console.log("🤖 Procesando IA para quitar fondo...");
-                // 2. Pasar el blob a la IA para quitar el fondo
-                const config = {
-                    publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.4.5/dist/'
-                };
-                const blobRecortado = await removeBackground(imgBlob, config);
-
-                console.log("🤖 Subiendo imagen limpia al servidor...");
-                // 3. Subir la imagen procesada al servidor
-                const formData = new FormData();
-                formData.append('imagen', blobRecortado, 'vape-limpio.png');
-
-                const res = await fetch('/api/upload', { method: 'POST', body: formData });
-                if (!res.ok) throw new Error('Error al subir la imagen limpia al servidor.');
-
-                const data = await res.json();
-
-                // 4. Reemplazar URL en el input
-                inputElement.value = data.url;
-                inputElement.dispatchEvent(new Event('input'));
-
-                btn.innerHTML = '✅';
-                setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
-                console.log("✅ ¡Imagen procesada y guardada en:", data.url);
-
-            } catch (error) {
-                console.error("❌ Error IA:", error);
-                alert("❌ Error: " + error.message + "\n\nAsegúrate de que el link sea válido.");
-                btn.innerHTML = '❌';
-                setTimeout(() => { btn.innerHTML = textoOriginal; btn.disabled = false; }, 3000);
-            }
-        };
-    </script>
 </body>
 </html>
