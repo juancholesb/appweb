@@ -109,6 +109,15 @@ exports.crearProducto = async (req, res) => {
 
         res.status(201).json({ mensaje: 'Vape registrado en Postgres', id: productoId });
     } catch (error) {
+        console.error('❌ Error al crear producto:', error.message);
+        console.error('Datos recibidos:', JSON.stringify({ nombre, descripcion, precio, categoria, imagen, sabores, stock, imagenesExtra }, null, 2));
+        console.error('Longitudes:', {
+            nombre: nombre?.length,
+            descripcion: descripcion?.length,
+            categoria: categoria?.length,
+            imagen: imagen?.length,
+            saboresStr: JSON.stringify(sabores)?.length
+        });
         res.status(500).json({ error: 'Error al registrar el producto.', detalle: error.message });
     }
 };
