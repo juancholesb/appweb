@@ -78,43 +78,19 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <!-- Campo de imagen principal: URL o subir archivo -->
-                    <div class="w-full">
-                        <div class="flex items-center gap-1 mb-1">
-                            <button type="button" id="btn-modo-url-principal" onclick="cambiarModoImagen('principal', 'url')" class="text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">🔗 URL</button>
-                            <button type="button" id="btn-modo-file-principal" onclick="cambiarModoImagen('principal', 'file')" class="text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-zinc-800 text-zinc-500 border border-zinc-700">📁 Subir</button>
-                            <div id="prod-img-preview" class="w-6 h-6 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex items-center justify-center ml-auto flex-shrink-0">
-                                <span class="text-[8px] text-zinc-700">?</span>
-                            </div>
-                        </div>
-                        <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-xs" oninput="previewImagenPrincipal()">
-                        <div id="prod-img-file-wrapper" class="hidden">
-                            <label class="w-full flex items-center gap-2 bg-zinc-950 border border-dashed border-zinc-700 hover:border-cyan-500/50 rounded-xl p-2 cursor-pointer transition group">
-                                <span class="text-zinc-500 group-hover:text-cyan-400 text-xs transition">📷 Seleccionar imagen...</span>
-                                <input type="file" id="prod-img-file" accept="image/*" class="hidden" onchange="subirImagenPrincipal(this)">
-                                <span id="prod-img-file-name" class="text-[10px] text-zinc-600 truncate ml-auto"></span>
-                            </label>
-                            <div id="prod-img-uploading" class="hidden flex items-center gap-2 mt-1">
-                                <div class="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
-                                <span class="text-[10px] text-cyan-400">Subiendo...</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Campo de imagen principal: URL -->
+                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
                 
-                <!-- Imágenes extra: agregar por URL o por archivo -->
+                <!-- Imágenes extra: agregar por URL -->
                 <div class="border-t border-zinc-800 pt-3">
                     <div class="flex justify-between items-center mb-2">
                         <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">🖼️ Imágenes Extra (Galería)</label>
-                        <div class="flex gap-1">
-                            <button type="button" onclick="agregarImagenExtraURL()" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">+ URL</button>
-                            <button type="button" onclick="document.getElementById('input-file-extra-hidden').click()" class="text-[10px] bg-zinc-800 text-purple-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">📁 Subir</button>
-                        </div>
+                        <button type="button" onclick="agregarImagenExtraURL()" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">+ Agregar URL</button>
                     </div>
-                    <input type="file" id="input-file-extra-hidden" accept="image/*" class="hidden" multiple onchange="subirImagenesExtra(this)">
                     <div id="contenedor-imgs-extra" class="space-y-2 max-h-28 overflow-y-auto pr-1"></div>
-                    <input type="hidden" id="prod-img-extras"><!-- Se mantiene para compatibilidad, se llena al enviar -->
+                    <input type="hidden" id="prod-img-extras">
                 </div>
                 
                 <!-- SABORES CON STOCK INDIVIDUAL -->
@@ -741,9 +717,6 @@
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
             
-            // Restablecer a modo URL y actualizar preview
-            cambiarModoImagen('principal', 'url');
-            previewImagenPrincipal();
             
             // Cargar imágenes extra como filas individuales
             const contImgExtra = document.getElementById('contenedor-imgs-extra');
@@ -826,8 +799,6 @@
             document.getElementById("form-producto").reset();
             contenedorSabores.innerHTML = "";
             document.getElementById('contenedor-imgs-extra').innerHTML = '';
-            document.getElementById('prod-img-preview').innerHTML = '<span class="text-[8px] text-zinc-700">?</span>';
-            cambiarModoImagen('principal', 'url');
             document.getElementById("titulo-form-producto").innerText = "📦 Añadir Vape al Catálogo";
             document.getElementById("btn-submit-producto").innerText = "Inyectar al Catálogo";
             document.getElementById("btn-submit-producto").className = "w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
