@@ -13,7 +13,7 @@ const authRoutes = require('./routes/auth.routes');
 const pedidosRoutes = require('./routes/pedidos.routes');
 const resenasRoutes = require('./routes/resenas.routes');
 const analiticasRoutes = require('./routes/analiticas.routes');
-const { protegerVistaAdmin } = require('./middlewares/auth.middleware');
+const { protegerVistaAdmin, protegerApiAdmin } = require('./middlewares/auth.middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,7 +87,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-app.post('/api/upload', protegerVistaAdmin, upload.single('imagen'), (req, res) => {
+app.post('/api/upload', protegerApiAdmin, upload.single('imagen'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: 'No se subió ninguna imagen.' });
     }

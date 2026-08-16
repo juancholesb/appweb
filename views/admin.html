@@ -78,10 +78,44 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <select id="prod-cat" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none cursor-pointer"></select>
-                    <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
+                    <!-- Campo de imagen principal: URL o subir archivo -->
+                    <div class="w-full">
+                        <div class="flex items-center gap-1 mb-1">
+                            <button type="button" id="btn-modo-url-principal" onclick="cambiarModoImagen('principal', 'url')" class="text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">🔗 URL</button>
+                            <button type="button" id="btn-modo-file-principal" onclick="cambiarModoImagen('principal', 'file')" class="text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-zinc-800 text-zinc-500 border border-zinc-700">📁 Subir</button>
+                            <div id="prod-img-preview" class="w-6 h-6 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex items-center justify-center ml-auto flex-shrink-0">
+                                <span class="text-[8px] text-zinc-700">?</span>
+                            </div>
+                        </div>
+                        <input type="url" id="prod-img" placeholder="URL de la imagen principal" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-xs" oninput="previewImagenPrincipal()">
+                        <div id="prod-img-file-wrapper" class="hidden">
+                            <label class="w-full flex items-center gap-2 bg-zinc-950 border border-dashed border-zinc-700 hover:border-cyan-500/50 rounded-xl p-2 cursor-pointer transition group">
+                                <span class="text-zinc-500 group-hover:text-cyan-400 text-xs transition">📷 Seleccionar imagen...</span>
+                                <input type="file" id="prod-img-file" accept="image/*" class="hidden" onchange="subirImagenPrincipal(this)">
+                                <span id="prod-img-file-name" class="text-[10px] text-zinc-600 truncate ml-auto"></span>
+                            </label>
+                            <div id="prod-img-uploading" class="hidden flex items-center gap-2 mt-1">
+                                <div class="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                                <span class="text-[10px] text-cyan-400">Subiendo...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <input type="text" id="prod-desc" placeholder="Descripción breve" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none" required>
-                <input type="text" id="prod-img-extras" placeholder="URLs extra separadas por coma (Opcional)" class="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2 text-white focus:border-cyan-500 outline-none text-[11px]">
+                
+                <!-- Imágenes extra: agregar por URL o por archivo -->
+                <div class="border-t border-zinc-800 pt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">🖼️ Imágenes Extra (Galería)</label>
+                        <div class="flex gap-1">
+                            <button type="button" onclick="agregarImagenExtraURL()" class="text-[10px] bg-zinc-800 text-cyan-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">+ URL</button>
+                            <button type="button" onclick="document.getElementById('input-file-extra-hidden').click()" class="text-[10px] bg-zinc-800 text-purple-400 font-bold px-3 py-1.5 rounded-lg hover:bg-zinc-700 cursor-pointer transition">📁 Subir</button>
+                        </div>
+                    </div>
+                    <input type="file" id="input-file-extra-hidden" accept="image/*" class="hidden" multiple onchange="subirImagenesExtra(this)">
+                    <div id="contenedor-imgs-extra" class="space-y-2 max-h-28 overflow-y-auto pr-1"></div>
+                    <input type="hidden" id="prod-img-extras"><!-- Se mantiene para compatibilidad, se llena al enviar -->
+                </div>
                 
                 <!-- SABORES CON STOCK INDIVIDUAL -->
                 <div class="border-t border-zinc-800 pt-3">
@@ -190,6 +224,162 @@
     </section>
 
     <script>
+        // =====================================================================
+        // SISTEMA DE SUBIDA DE IMÁGENES (URL o archivo local)
+        // =====================================================================
+
+        // Subir un archivo al servidor y devolver la URL pública
+        async function subirArchivoImagen(file) {
+            const formData = new FormData();
+            formData.append('imagen', file);
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Error al subir la imagen');
+            const data = await res.json();
+            return data.url; // ej: /img/uploads/vape-123456.png
+        }
+
+        // Cambiar entre modo URL y modo Archivo para la imagen principal
+        window.cambiarModoImagen = function(campo, modo) {
+            const btnUrl = document.getElementById(`btn-modo-url-${campo}`);
+            const btnFile = document.getElementById(`btn-modo-file-${campo}`);
+            const inputUrl = document.getElementById('prod-img');
+            const wrapperFile = document.getElementById('prod-img-file-wrapper');
+
+            if (modo === 'url') {
+                btnUrl.className = 'text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-cyan-500/20 text-cyan-400 border border-cyan-500/30';
+                btnFile.className = 'text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-zinc-800 text-zinc-500 border border-zinc-700';
+                inputUrl.classList.remove('hidden');
+                wrapperFile.classList.add('hidden');
+            } else {
+                btnFile.className = 'text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-purple-500/20 text-purple-400 border border-purple-500/30';
+                btnUrl.className = 'text-[9px] font-bold px-2 py-0.5 rounded-md cursor-pointer transition bg-zinc-800 text-zinc-500 border border-zinc-700';
+                inputUrl.classList.add('hidden');
+                wrapperFile.classList.remove('hidden');
+            }
+        };
+
+        // Subir imagen principal desde archivo
+        window.subirImagenPrincipal = async function(input) {
+            if (!input.files[0]) return;
+            const file = input.files[0];
+            const uploading = document.getElementById('prod-img-uploading');
+            const fileName = document.getElementById('prod-img-file-name');
+            
+            fileName.textContent = file.name;
+            uploading.classList.remove('hidden');
+            
+            try {
+                const url = await subirArchivoImagen(file);
+                document.getElementById('prod-img').value = url;
+                previewImagenPrincipal();
+                uploading.classList.add('hidden');
+                fileName.textContent = '✅ ' + file.name;
+            } catch (err) {
+                uploading.classList.add('hidden');
+                fileName.textContent = '❌ Error al subir';
+                alert('❌ Error al subir la imagen: ' + err.message);
+            }
+        };
+
+        // Preview de la imagen principal
+        window.previewImagenPrincipal = function() {
+            const url = document.getElementById('prod-img').value.trim();
+            const preview = document.getElementById('prod-img-preview');
+            if (!preview) return;
+            if (url) {
+                preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
+            } else {
+                preview.innerHTML = '<span class="text-[8px] text-zinc-700">?</span>';
+            }
+        };
+
+        // Agregar una fila de imagen extra por URL
+        window.agregarImagenExtraURL = function(url = '') {
+            const contenedor = document.getElementById('contenedor-imgs-extra');
+            const fila = document.createElement('div');
+            fila.className = 'fila-img-extra flex items-center gap-2 bg-zinc-950/50 rounded-lg border border-zinc-800/50 p-1.5';
+            fila.innerHTML = `
+                <div class="img-extra-preview w-7 h-7 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                    ${url ? `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">` : '<span class="text-[8px] text-zinc-700">+</span>'}
+                </div>
+                <input type="url" value="${url}" placeholder="URL de imagen extra" 
+                    class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-[11px] focus:border-cyan-500 input-extra-url"
+                    oninput="previewExtraImg(this)">
+                <button type="button" onclick="this.closest('.fila-img-extra').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
+            `;
+            contenedor.appendChild(fila);
+        };
+
+        // Preview de imagen extra
+        window.previewExtraImg = function(input) {
+            const preview = input.closest('.fila-img-extra').querySelector('.img-extra-preview');
+            if (!preview) return;
+            const url = input.value.trim();
+            if (url) {
+                preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
+            } else {
+                preview.innerHTML = '<span class="text-[8px] text-zinc-700">+</span>';
+            }
+        };
+
+        // Subir imágenes extra desde archivo (puede ser múltiple)
+        window.subirImagenesExtra = async function(input) {
+            const files = Array.from(input.files);
+            if (files.length === 0) return;
+
+            for (const file of files) {
+                // Crear fila con estado de carga
+                const contenedor = document.getElementById('contenedor-imgs-extra');
+                const fila = document.createElement('div');
+                fila.className = 'fila-img-extra flex items-center gap-2 bg-zinc-950/50 rounded-lg border border-zinc-800/50 p-1.5';
+                fila.innerHTML = `
+                    <div class="img-extra-preview w-7 h-7 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                        <div class="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <span class="flex-1 text-[11px] text-purple-400">Subiendo ${file.name}...</span>
+                    <button type="button" onclick="this.closest('.fila-img-extra').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
+                `;
+                contenedor.appendChild(fila);
+
+                try {
+                    const url = await subirArchivoImagen(file);
+                    // Actualizar la fila con la URL obtenida
+                    fila.innerHTML = `
+                        <div class="img-extra-preview w-7 h-7 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                            <img src="${url}" class="w-full h-full object-cover">
+                        </div>
+                        <input type="url" value="${url}" placeholder="URL de imagen extra" 
+                            class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white outline-none text-[11px] focus:border-cyan-500 input-extra-url"
+                            oninput="previewExtraImg(this)">
+                        <button type="button" onclick="this.closest('.fila-img-extra').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
+                    `;
+                } catch (err) {
+                    fila.innerHTML = `
+                        <div class="img-extra-preview w-7 h-7 rounded-md overflow-hidden border border-zinc-700/50 bg-zinc-900 flex-shrink-0 flex items-center justify-center">
+                            <span class="text-[8px] text-red-500">✕</span>
+                        </div>
+                        <span class="flex-1 text-[11px] text-red-400">❌ Error: ${file.name}</span>
+                        <button type="button" onclick="this.closest('.fila-img-extra').remove()" class="text-red-400 hover:text-red-300 font-bold px-1.5 text-xs cursor-pointer transition flex-shrink-0">✕</button>
+                    `;
+                }
+            }
+            // Limpiar el input para poder subir los mismos archivos de nuevo
+            input.value = '';
+        };
+
+        // Recolectar todas las URLs de imágenes extra (usado al enviar el formulario)
+        function recolectarImagenesExtra() {
+            const urls = [];
+            document.querySelectorAll('.fila-img-extra .input-extra-url').forEach(input => {
+                const url = input.value.trim();
+                if (url) urls.push(url);
+            });
+            return urls;
+        }
         const contenedorSabores = document.getElementById("contenedor-sabores");
         
         // Memoria temporal local
@@ -469,7 +659,17 @@
             document.getElementById("prod-cat").value = prod.categoria;
             document.getElementById("prod-img").value = prod.imagen;
             document.getElementById("prod-desc").value = prod.descripcion;
-            document.getElementById("prod-img-extras").value = (prod.imagenesExtra || []).join(',');
+            
+            // Restablecer a modo URL y actualizar preview
+            cambiarModoImagen('principal', 'url');
+            previewImagenPrincipal();
+            
+            // Cargar imágenes extra como filas individuales
+            const contImgExtra = document.getElementById('contenedor-imgs-extra');
+            contImgExtra.innerHTML = '';
+            (prod.imagenesExtra || []).forEach(url => {
+                if (url && url.trim()) agregarImagenExtraURL(url.trim());
+            });
 
             // Re-armar caja de sabores con stock real desde la BD
             contenedorSabores.innerHTML = "";
@@ -544,6 +744,9 @@
             editProductoId = null;
             document.getElementById("form-producto").reset();
             contenedorSabores.innerHTML = "";
+            document.getElementById('contenedor-imgs-extra').innerHTML = '';
+            document.getElementById('prod-img-preview').innerHTML = '<span class="text-[8px] text-zinc-700">?</span>';
+            cambiarModoImagen('principal', 'url');
             document.getElementById("titulo-form-producto").innerText = "📦 Añadir Vape al Catálogo";
             document.getElementById("btn-submit-producto").innerText = "Inyectar al Catálogo";
             document.getElementById("btn-submit-producto").className = "w-full bg-cyan-500 text-black font-bold p-2.5 rounded-xl transition cursor-pointer";
@@ -600,7 +803,6 @@
                 }
             });
 
-            const stringExtras = document.getElementById("prod-img-extras").value;
             const data = {
                 nombre: document.getElementById("prod-nombre").value,
                 precio: Number(document.getElementById("prod-precio").value),
@@ -608,7 +810,7 @@
                 imagen: document.getElementById("prod-img").value,
                 descripcion: document.getElementById("prod-desc").value,
                 sabores: arraySabores,
-                imagenesExtra: stringExtras ? stringExtras.split(',').map(u => u.trim()).filter(u => u) : []
+                imagenesExtra: recolectarImagenesExtra()
             };
 
             const url = editProductoId ? `/api/productos/${editProductoId}` : '/api/productos';
