@@ -285,16 +285,69 @@
             }
         };
 
-        // Preview de la imagen principal
+        // Detectar si una URL es de Google Drive
+        function esLinkDrive(url) {
+            return url.includes('drive.google.com/file/d/') || 
+                   url.includes('drive.google.com/open?id=') ||
+                   url.includes('drive.google.com/uc?id=');
+        }
+
+        // Descargar imagen desde URL remota (Drive, etc.) y guardarla en el servidor
+        async function descargarImagenDesdeURL(url) {
+            const res = await fetch('/api/upload-from-url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+                credentials: 'include'
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detalle || err.error || 'Error al descargar');
+            }
+            const data = await res.json();
+            return data.url; // ej: /img/uploads/vape-xxx.png
+        }
+
+        // Preview de la imagen principal (con detección automática de Drive)
+        let _driveDebounceTimer = null;
         window.previewImagenPrincipal = function() {
-            const url = document.getElementById('prod-img').value.trim();
+            const input = document.getElementById('prod-img');
+            const url = input.value.trim();
             const preview = document.getElementById('prod-img-preview');
             if (!preview) return;
-            if (url) {
-                preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
-            } else {
+
+            if (!url) {
                 preview.innerHTML = '<span class="text-[8px] text-zinc-700">?</span>';
+                return;
             }
+
+            // Si es un link de Google Drive, descargarlo automáticamente
+            if (esLinkDrive(url)) {
+                preview.innerHTML = '<div class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>';
+                input.style.borderColor = '#f59e0b';
+
+                // Debounce para no disparar múltiples veces mientras pega
+                clearTimeout(_driveDebounceTimer);
+                _driveDebounceTimer = setTimeout(async () => {
+                    try {
+                        const localUrl = await descargarImagenDesdeURL(url);
+                        input.value = localUrl;
+                        input.style.borderColor = '#10b981';
+                        preview.innerHTML = `<img src="${localUrl}" class="w-full h-full object-cover">`;
+                        // Restaurar borde después de 2 seg
+                        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+                    } catch (err) {
+                        preview.innerHTML = '<span class="text-[8px] text-red-500">✕</span>';
+                        input.style.borderColor = '#ef4444';
+                        alert('❌ No se pudo descargar la imagen de Drive: ' + err.message + '\n\nAsegúrate de que el archivo sea público (\"Cualquiera con el enlace puede ver\").');
+                        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+                    }
+                }, 600);
+                return;
+            }
+
+            // URL normal: solo mostrar preview
+            preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
         };
 
         // Agregar una fila de imagen extra por URL
@@ -314,16 +367,44 @@
             contenedor.appendChild(fila);
         };
 
-        // Preview de imagen extra
+        // Preview de imagen extra (con detección de Drive)
         window.previewExtraImg = function(input) {
             const preview = input.closest('.fila-img-extra').querySelector('.img-extra-preview');
             if (!preview) return;
             const url = input.value.trim();
-            if (url) {
-                preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
-            } else {
+            
+            if (!url) {
                 preview.innerHTML = '<span class="text-[8px] text-zinc-700">+</span>';
+                return;
             }
+
+            // Si es un link de Google Drive, descargarlo automáticamente
+            if (esLinkDrive(url)) {
+                preview.innerHTML = '<div class="w-3 h-3 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>';
+                input.style.borderColor = '#f59e0b';
+                
+                // Usamos un timer asociado al elemento para poder hacer debounce por cada input
+                if (input.dataset.timerId) clearTimeout(parseInt(input.dataset.timerId));
+                
+                const timerId = setTimeout(async () => {
+                    try {
+                        const localUrl = await descargarImagenDesdeURL(url);
+                        input.value = localUrl;
+                        input.style.borderColor = '#10b981';
+                        preview.innerHTML = `<img src="${localUrl}" class="w-full h-full object-cover">`;
+                        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+                    } catch (err) {
+                        preview.innerHTML = '<span class="text-[8px] text-red-500">✕</span>';
+                        input.style.borderColor = '#ef4444';
+                        alert('❌ Error descargando extra de Drive: ' + err.message);
+                        setTimeout(() => { input.style.borderColor = ''; }, 2000);
+                    }
+                }, 600);
+                input.dataset.timerId = timerId;
+                return;
+            }
+
+            preview.innerHTML = `<img src="${url}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<span class=\\'text-[8px] text-red-500\\'>✕</span>'">`;
         };
 
         // Subir imágenes extra desde archivo (puede ser múltiple)

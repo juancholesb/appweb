@@ -96,6 +96,64 @@ app.post('/api/upload', protegerApiAdmin, upload.single('imagen'), (req, res) =>
     res.json({ url: publicUrl });
 });
 
+// =========================================================================
+// Descargar imagen desde URL remota (Google Drive, etc.) y guardarla local
+// =========================================================================
+app.post('/api/upload-from-url', protegerApiAdmin, async (req, res) => {
+    try {
+        let { url: imageUrl } = req.body;
+        if (!imageUrl) return res.status(400).json({ error: 'URL requerida' });
+
+        // Convertir links de Google Drive al formato de descarga directa
+        // Formato 1: https://drive.google.com/file/d/FILE_ID/view...
+        const driveFileMatch = imageUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveFileMatch) {
+            imageUrl = `https://drive.google.com/uc?export=download&id=${driveFileMatch[1]}`;
+        }
+        // Formato 2: https://drive.google.com/open?id=FILE_ID
+        const driveOpenMatch = imageUrl.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+        if (driveOpenMatch) {
+            imageUrl = `https://drive.google.com/uc?export=download&id=${driveOpenMatch[1]}`;
+        }
+        // Formato 3: https://drive.google.com/uc?id=FILE_ID (sin export)
+        if (imageUrl.includes('drive.google.com/uc') && !imageUrl.includes('export=')) {
+            imageUrl = imageUrl.replace('uc?', 'uc?export=download&');
+        }
+
+        // Descargar la imagen siguiendo redirecciones
+        const response = await fetch(imageUrl, { redirect: 'follow' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}: No se pudo descargar`);
+
+        const contentType = response.headers.get('content-type') || '';
+        // Verificar que sea una imagen (o que venga de Drive que a veces miente con el content-type)
+        const esImagen = contentType.startsWith('image/') || driveFileMatch || driveOpenMatch;
+        if (!esImagen) {
+            throw new Error('La URL no apunta a una imagen válida (content-type: ' + contentType + ')');
+        }
+
+        // Determinar extensión
+        let ext = '.png';
+        if (contentType.includes('jpeg') || contentType.includes('jpg')) ext = '.jpg';
+        else if (contentType.includes('webp')) ext = '.webp';
+        else if (contentType.includes('gif')) ext = '.gif';
+        else if (contentType.includes('svg')) ext = '.svg';
+
+        // Guardar en disco
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = 'vape-' + uniqueSuffix + ext;
+        const filepath = path.join(uploadDir, filename);
+
+        const arrayBuffer = await response.arrayBuffer();
+        fs.writeFileSync(filepath, Buffer.from(arrayBuffer));
+
+        const publicUrl = '/img/uploads/' + filename;
+        res.json({ url: publicUrl });
+    } catch (error) {
+        console.error('❌ Error descargando imagen desde URL:', error.message);
+        res.status(500).json({ error: 'No se pudo descargar la imagen.', detalle: error.message });
+    }
+});
+
 // Ruta proxy para evadir CORS al descargar imágenes de otros servidores
 // No requiere auth: solo descarga imágenes públicas de internet, no expone datos privados
 app.get('/api/admin/proxy-image', async (req, res) => {
